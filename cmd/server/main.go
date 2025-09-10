@@ -2,26 +2,31 @@ package main
 
 import (
 	"context"
-	"log"
-	"vaultwarden-syncer/ent"
-	"vaultwarden-syncer/internal/auth"
-	"vaultwarden-syncer/internal/backup"
-	"vaultwarden-syncer/internal/config"
-	"vaultwarden-syncer/internal/database"
-	"vaultwarden-syncer/internal/handler"
-	"vaultwarden-syncer/internal/scheduler"
-	"vaultwarden-syncer/internal/server"
-	"vaultwarden-syncer/internal/service"
-	"vaultwarden-syncer/internal/setup"
-	"vaultwarden-syncer/internal/sync"
+	"github.com/ca-x/vaultwarden-syncer/ent"
+	"github.com/ca-x/vaultwarden-syncer/internal/auth"
+	"github.com/ca-x/vaultwarden-syncer/internal/backup"
+	"github.com/ca-x/vaultwarden-syncer/internal/config"
+	"github.com/ca-x/vaultwarden-syncer/internal/database"
+	"github.com/ca-x/vaultwarden-syncer/internal/handler"
+	"github.com/ca-x/vaultwarden-syncer/internal/logger"
+	"github.com/ca-x/vaultwarden-syncer/internal/scheduler"
+	"github.com/ca-x/vaultwarden-syncer/internal/server"
+	"github.com/ca-x/vaultwarden-syncer/internal/service"
+	"github.com/ca-x/vaultwarden-syncer/internal/setup"
+	"github.com/ca-x/vaultwarden-syncer/internal/sync"
 
 	"go.uber.org/fx"
+	"go.uber.org/zap"
 )
 
 func main() {
 	app := fx.New(
 		fx.Provide(
 			config.Load,
+			func(cfg *config.Config) *zap.Logger {
+				logger.InitLogger(cfg.Logging.Level, cfg.Logging.File)
+				return logger.GetLogger()
+			},
 			database.New,
 			func(cfg *config.Config) *auth.Service {
 				return auth.New(cfg.Auth.JWTSecret)
@@ -40,28 +45,29 @@ func main() {
 			handler.New,
 			server.New,
 		),
-		fx.Invoke(func(lc fx.Lifecycle, srv *server.Server, db *ent.Client, scheduler *scheduler.Service) {
+		fx.Invoke(func(lc fx.Lifecycle, srv *server.Server, db *ent.Client, scheduler *scheduler.Service, log *zap.Logger) {
 			lc.Append(fx.Hook{
 				OnStart: func(ctx context.Context) error {
-					log.Println("Vaultwarden Syncer starting...")
+					log.Info("Vaultwarden Syncer starting...")
 					
 					if err := scheduler.Start(ctx); err != nil {
-						log.Printf("Failed to start scheduler: %v", err)
+						log.Error("Failed to start scheduler", zap.Error(err))
 					}
 					
 					go func() {
 						if err := srv.Start(); err != nil {
-							log.Printf("Server failed to start: %v", err)
+							log.Error("Server failed to start", zap.Error(err))
 						}
 					}()
 					return nil
 				},
 				OnStop: func(ctx context.Context) error {
-					log.Println("Vaultwarden Syncer stopping...")
+					log.Info("Vaultwarden Syncer stopping...")
 					scheduler.Stop()
 					if err := database.Close(db); err != nil {
-						log.Printf("Error closing database: %v", err)
+						log.Error("Error closing database", zap.Error(err))
 					}
+					logger.Sync()
 					return srv.Shutdown()
 				},
 			})
