@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    restart: unless-stopped
+    environment:
+      WEBSOCKET_ENABLED: "true"
+    volumes:
+      - ./vaultwarden-data:/data
+    ports:
+      - "8080:80"
+      - "3012:3012"
+
+  vaultwarden-syncer:
+    build: .
+    container_name: vaultwarden-syncer
+    restart: unless-stopped
+    depends_on:
+      - vaultwarden
+    volumes:
+      - ./syncer-data:/app/data
+      - ./vaultwarden-data:/vaultwarden-data:ro
+      - ./config.yaml:/app/config.yaml:ro
+    ports:
+      - "8181:8181"
+    environment:
+      - VAULTWARDEN_DATA_PATH=/vaultwarden-data
+
+volumes:
+  vaultwarden-data:
+  syncer-data:

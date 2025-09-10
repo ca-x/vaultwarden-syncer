@@ -1,0 +1,18 @@
+server:
+  port: 8181
+
+database:
+  driver: sqlite3
+  dsn: "./data/syncer.db"
+
+auth:
+  jwt_secret: "your-secret-key-here-replace-with-generated"
+
+storage:
+  webdav: []
+  s3: []
+
+sync:
+  interval: 3600          # seconds between syncs
+  compression_level: 6    # 1-9 compression level
+  password: ""            # optional password for backup archives
