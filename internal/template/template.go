@@ -148,6 +148,7 @@ func (m *Manager) RenderDashboard(data DashboardData, lang i18n.Language, transl
 			{URL: "/", Icon: m.Icon("dashboard"), Text: translator.T(lang, "nav.dashboard")},
 			{URL: "/storage", Icon: m.Icon("database"), Text: translator.T(lang, "nav.storage")},
 			{URL: "/settings", Icon: m.Icon("settings"), Text: translator.T(lang, "nav.settings")},
+			{URL: "/system-info", Icon: m.Icon("information"), Text: translator.T(lang, "nav.system_info")},
 			{URL: "/logout", Icon: m.Icon("logout"), Text: translator.T(lang, "nav.logout")},
 		},
 		Content: template.HTML(content.String()),
@@ -258,7 +259,9 @@ func (m *Manager) RenderStorage(storages []*ent.Storage, client *ent.Client, lan
 		ShowNav:    true,
 		NavItems: []NavItem{
 			{URL: "/", Icon: m.Icon("dashboard"), Text: translator.T(lang, "nav.dashboard")},
+			{URL: "/storage", Icon: m.Icon("database"), Text: translator.T(lang, "nav.storage")},
 			{URL: "/settings", Icon: m.Icon("settings"), Text: translator.T(lang, "nav.settings")},
+			{URL: "/system-info", Icon: m.Icon("information"), Text: translator.T(lang, "nav.system_info")},
 			{URL: "/logout", Icon: m.Icon("logout"), Text: translator.T(lang, "nav.logout")},
 		},
 		Content: template.HTML(content.String()),
@@ -295,6 +298,8 @@ func (m *Manager) RenderSettings(lang i18n.Language, translator *i18n.Translator
 		NavItems: []NavItem{
 			{URL: "/", Icon: m.Icon("dashboard"), Text: translator.T(lang, "nav.dashboard")},
 			{URL: "/storage", Icon: m.Icon("database"), Text: translator.T(lang, "nav.storage")},
+			{URL: "/settings", Icon: m.Icon("settings"), Text: translator.T(lang, "nav.settings")},
+			{URL: "/system-info", Icon: m.Icon("information"), Text: translator.T(lang, "nav.system_info")},
 			{URL: "/logout", Icon: m.Icon("logout"), Text: translator.T(lang, "nav.logout")},
 		},
 		Content: template.HTML(content.String()),
@@ -492,4 +497,66 @@ func (m *Manager) CreateMessage(msgType, content string) *Message {
 		Content: content,
 		Icon:    icon,
 	}
+}
+
+// RenderSystemInfo renders the system information page
+func (m *Manager) RenderSystemInfo(systemInfo map[string]interface{}, lang i18n.Language, translator *i18n.Translator) (string, error) {
+	// Create template data with translations
+	templateData := struct {
+		Version            string
+		BuildDate          string
+		GitCommit          string
+		GoVersion          string
+		Platform           string
+		Uptime             string
+		DatabaseType       string
+		DatabaseSize       string
+		DatabasePath       string
+		VaultwardenDataPath string
+		VaultwardenDataSize string
+		LastBackupTime     string
+		T                  func(string, ...interface{}) string
+	}{
+		Version:            systemInfo["version"].(string),
+		BuildDate:          systemInfo["build_date"].(string),
+		GitCommit:          systemInfo["git_commit"].(string),
+		GoVersion:          systemInfo["go_version"].(string),
+		Platform:           systemInfo["platform"].(string),
+		Uptime:             systemInfo["uptime"].(string),
+		DatabaseType:       "SQLite", // Default to SQLite as per project requirements
+		DatabaseSize:       "N/A",
+		DatabasePath:       "N/A",
+		VaultwardenDataPath: "N/A",
+		VaultwardenDataSize: "N/A", 
+		LastBackupTime:     "N/A",
+		T: func(key string, args ...interface{}) string {
+			return translator.T(lang, key, args...)
+		},
+	}
+
+	var content bytes.Buffer
+	err := m.templates.ExecuteTemplate(&content, "system-info.html", templateData)
+	if err != nil {
+		return "", err
+	}
+
+	pageData := PageData{
+		Title:      translator.T(lang, "system.title"),
+		AuthLayout: false,
+		ShowNav:    true,
+		NavItems: []NavItem{
+			{URL: "/", Icon: m.Icon("dashboard"), Text: translator.T(lang, "nav.dashboard")},
+			{URL: "/storage", Icon: m.Icon("database"), Text: translator.T(lang, "nav.storage")},
+			{URL: "/settings", Icon: m.Icon("settings"), Text: translator.T(lang, "nav.settings")},
+			{URL: "/system-info", Icon: m.Icon("information"), Text: translator.T(lang, "nav.system_info")},
+			{URL: "/logout", Icon: m.Icon("logout"), Text: translator.T(lang, "nav.logout")},
+		},
+		Content: template.HTML(content.String()),
+		Lang:    lang,
+		T: func(key string, args ...interface{}) string {
+			return translator.T(lang, key, args...)
+		},
+	}
+
+	return m.renderLayout(pageData)
 }

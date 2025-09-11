@@ -16,7 +16,7 @@
 </div>
 {{else}}
 {{range .Cards}}
-<div class="storage-card" data-status="{{if .Enabled}}enabled{{else}}disabled{{end}}">
+<div class="storage-card" data-status="{{if eq .Status "Enabled"}}enabled{{else}}disabled{{end}}">
     <div class="storage-card-header">
         <div class="storage-info">
             <div class="storage-icon">
@@ -30,13 +30,13 @@
                 <h3 class="storage-name">{{.Name}}</h3>
                 <div class="storage-meta">
                     <span class="storage-type">{{.Type}}</span>
-                    <span class="storage-status status-{{if .Enabled}}enabled{{else}}disabled{{end}}">
-                        {{if .Enabled}}
+                    <span class="storage-status status-{{if eq .Status "Enabled"}}enabled{{else}}disabled{{end}}">
+                        {{if eq .Status "Enabled"}}
                             <iconify-icon icon="mdi:check-circle"></iconify-icon>
-                            Enabled
+                            {{.Status}}
                         {{else}}
                             <iconify-icon icon="mdi:pause-circle"></iconify-icon>
-                            Disabled
+                            {{.Status}}
                         {{end}}
                     </span>
                 </div>
@@ -44,16 +44,16 @@
         </div>
         <div class="storage-actions">
             <div class="action-buttons">
-                <button hx-post="/api/sync/{{.ID}}" hx-target="#result" 
+                <button hx-post="/api/sync/{{.ID}}" hx-target="#sync-notifications" hx-swap="afterbegin" 
                         class="btn btn-icon btn-primary" title="Sync Now"
-                        {{if not .Enabled}}disabled{{end}}>
+                        {{if ne .Status "Enabled"}}disabled{{end}}>
                     <iconify-icon icon="mdi:sync"></iconify-icon>
                 </button>
                 <button hx-get="/storage/{{.ID}}/edit" hx-target="body" 
                         class="btn btn-icon btn-secondary" title="Edit">
                     <iconify-icon icon="mdi:pencil"></iconify-icon>
                 </button>
-                <button hx-delete="/api/storage/{{.ID}}" hx-target="#result" 
+                <button hx-delete="/api/storage/{{.ID}}" hx-target="#sync-notifications" hx-swap="afterbegin"
                         hx-confirm="Are you sure you want to delete this storage backend?"
                         class="btn btn-icon btn-danger" title="Delete">
                     <iconify-icon icon="mdi:delete"></iconify-icon>

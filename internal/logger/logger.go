@@ -2,6 +2,7 @@ package logger
 
 import (
 	"os"
+	"path/filepath"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -61,6 +62,15 @@ func InitLogger(level string, logFile string) {
 	cores = append(cores, consoleCore)
 
 	if logFile != "" {
+		// 确保日志文件目录存在
+		logDir := filepath.Dir(logFile)
+		if err := os.MkdirAll(logDir, 0755); err != nil {
+			// 如果无法创建目录，只输出到控制台
+			Logger = zap.New(zapcore.NewTee(consoleCore), zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
+			Logger.Error("Failed to create log directory, logging to console only", zap.String("dir", logDir), zap.Error(err))
+			return
+		}
+
 		fileWriter := &lumberjack.Logger{
 			Filename:   logFile,
 			MaxSize:    100,

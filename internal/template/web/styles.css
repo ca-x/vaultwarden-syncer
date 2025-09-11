@@ -604,9 +604,31 @@ p {
 }
 
 .auth-container {
-    max-width: 500px;
+    max-width: 400px;
     width: 100%;
     padding: 3rem;
+}
+
+/* Login form specific styles */
+.login-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.login-header h1 {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.login-header p {
+    font-size: 1rem;
+    opacity: 0.9;
+}
+
+/* Shorter input fields for login */
+.auth-container input {
+    max-width: 100%;
+    width: 100%;
 }
 
 @media (max-width: 768px) {
@@ -617,8 +639,12 @@ p {
     
     .auth-container {
         padding: 2rem;
-        max-width: none;
-        margin: 0;
+        max-width: 350px;
+        margin: 0 auto;
+    }
+    
+    .login-header h1 {
+        font-size: 1.75rem;
     }
 }
 

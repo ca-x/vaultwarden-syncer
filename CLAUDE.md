@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-软件是作为vaultwarden的数据同步补充，主要参考vaultwarden-backup这个项目（https://github.com/ttionya/vaultwarden-backup）的思路。软件需要创建docker和vaultwarden的docker配合使用，使用的时候会将vaultwarden的data目录映射进来。
+软件是作为vaultwarden的数据同步补充，主要参考[vaultwarden-backup]（https://github.com/ttionya/vaultwarden-backup）这个项目的思路。软件需要创建docker和vaultwarden的docker配合使用，使用的时候会将vaultwarden的data目录映射进来。
 
 ## Repository Structure
 

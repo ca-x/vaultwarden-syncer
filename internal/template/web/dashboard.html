@@ -39,16 +39,11 @@
     </section>
     
     <section class="glass-card card">
-        <h2><iconify-icon icon="mdi:chart-line" class="icon-success"></iconify-icon>{{call .T "dashboard.statistics"}}</h2>
-        <p>{{call .T "dashboard.backup_size" .BackupSize}}</p>
-        <small>{{call .T "dashboard.total_backups" .TotalBackups}}</small>
+        <h2><iconify-icon icon="mdi:history" class="icon-success"></iconify-icon>{{call .T "dashboard.sync_history"}}</h2>
+        <p>{{call .T "dashboard.recent_backups" .TotalBackups}}</p>
+        <a href="/sync-history" class="btn btn-primary">{{call .T "dashboard.view_history"}}</a>
     </section>
     
-    <section class="glass-card card">
-        <h2><iconify-icon icon="mdi:cog" class="icon-warning"></iconify-icon>{{call .T "dashboard.settings"}}</h2>
-        <p>{{call .T "dashboard.system_config"}}</p>
-        <a href="/settings" class="btn btn-outline">{{call .T "dashboard.configure"}}</a>
-    </section>
 </div>
 
 <!-- 结果显示区域 -->

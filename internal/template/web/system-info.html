@@ -1,0 +1,111 @@
+<header>
+    <h1><iconify-icon icon="mdi:information" class="icon-large icon-info"></iconify-icon>{{call .T "system.title"}}</h1>
+</header>
+
+<div class="grid grid-2">
+    <section class="glass-card card">
+        <h2><iconify-icon icon="mdi:application" class="icon-info"></iconify-icon>{{call .T "system.application"}}</h2>
+        <div class="info-group">
+            <div class="info-item">
+                <label>{{call .T "system.version"}}:</label>
+                <span class="value">{{.Version}}</span>
+            </div>
+            <div class="info-item">
+                <label>{{call .T "system.build_date"}}:</label>
+                <span class="value">{{.BuildDate}}</span>
+            </div>
+            <div class="info-item">
+                <label>{{call .T "system.git_commit"}}:</label>
+                <span class="value">{{.GitCommit}}</span>
+            </div>
+        </div>
+    </section>
+    
+    <section class="glass-card card">
+        <h2><iconify-icon icon="mdi:server" class="icon-purple"></iconify-icon>{{call .T "system.runtime"}}</h2>
+        <div class="info-group">
+            <div class="info-item">
+                <label>{{call .T "system.go_version"}}:</label>
+                <span class="value">{{.GoVersion}}</span>
+            </div>
+            <div class="info-item">
+                <label>{{call .T "system.platform"}}:</label>
+                <span class="value">{{.Platform}}</span>
+            </div>
+            <div class="info-item">
+                <label>{{call .T "system.uptime"}}:</label>
+                <span class="value">{{.Uptime}}</span>
+            </div>
+        </div>
+    </section>
+    
+    <section class="glass-card card">
+        <h2><iconify-icon icon="mdi:database" class="icon-success"></iconify-icon>{{call .T "system.database"}}</h2>
+        <div class="info-group">
+            <div class="info-item">
+                <label>{{call .T "system.db_type"}}:</label>
+                <span class="value">{{.DatabaseType}}</span>
+            </div>
+            <div class="info-item">
+                <label>{{call .T "system.db_size"}}:</label>
+                <span class="value">{{.DatabaseSize}}</span>
+            </div>
+            <div class="info-item">
+                <label>{{call .T "system.db_location"}}:</label>
+                <span class="value">{{.DatabasePath}}</span>
+            </div>
+        </div>
+    </section>
+    
+    <section class="glass-card card">
+        <h2><iconify-icon icon="mdi:folder" class="icon-warning"></iconify-icon>{{call .T "system.vaultwarden"}}</h2>
+        <div class="info-group">
+            <div class="info-item">
+                <label>{{call .T "system.data_path"}}:</label>
+                <span class="value">{{.VaultwardenDataPath}}</span>
+            </div>
+            <div class="info-item">
+                <label>{{call .T "system.data_size"}}:</label>
+                <span class="value">{{.VaultwardenDataSize}}</span>
+            </div>
+            <div class="info-item">
+                <label>{{call .T "system.last_backup"}}:</label>
+                <span class="value">{{.LastBackupTime}}</span>
+            </div>
+        </div>
+    </section>
+</div>
+
+<style>
+.info-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--pico-muted-border-color);
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-item label {
+    font-weight: 600;
+    color: var(--pico-color);
+}
+
+.info-item .value {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9em;
+    color: var(--pico-muted-color);
+    text-align: right;
+    word-break: break-all;
+    max-width: 60%;
+}
+</style>

@@ -3,6 +3,8 @@ package database
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/ca-x/vaultwarden-syncer/ent"
 	"github.com/ca-x/vaultwarden-syncer/internal/config"
@@ -16,10 +18,15 @@ func New(cfg *config.Config) (*ent.Client, error) {
 
 	switch cfg.Database.Driver {
 	case "sqlite3":
-		// 确保数据库文件路径目录存在
 		dsn := cfg.Database.DSN
 		if dsn == "" {
 			dsn = "./data/syncer.db"
+		}
+
+		// 确保数据库文件路径目录存在
+		dbDir := filepath.Dir(dsn)
+		if err := os.MkdirAll(dbDir, 0755); err != nil {
+			return nil, fmt.Errorf("failed to create database directory %s: %v", dbDir, err)
 		}
 
 		// 使用 entsqlite 驱动名称

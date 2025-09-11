@@ -1,3 +1,6 @@
+<!-- Notifications Container -->
+<div id="sync-notifications" class="notifications-container"></div>
+
 <!-- Storage Page Header -->
 <div class="page-header">
     <div class="header-content">
@@ -6,7 +9,7 @@
         </div>
         <div class="header-text">
             <h1>{{call .T "storage.title"}}</h1>
-            <p class="header-subtitle">Manage your backup destinations</p>
+            <p class="header-subtitle">{{call .T "storage.manage_subtitle"}}</p>
         </div>
     </div>
 </div>
@@ -16,8 +19,8 @@
     <!-- Add New Storage Section -->
     <section class="add-storage-section">
         <div class="section-header">
-            <h2><iconify-icon icon="mdi:plus-circle" class="section-icon"></iconify-icon>Add New Storage</h2>
-            <p class="section-description">Connect a new storage backend for your backups</p>
+            <h2><iconify-icon icon="mdi:plus-circle" class="section-icon"></iconify-icon>{{call .T "storage.add_new"}}</h2>
+            <p class="section-description">{{call .T "storage.add_new_description"}}</p>
         </div>
         
         <div class="form-container">
@@ -26,16 +29,16 @@
                 <div class="form-section">
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="storage_name" class="form-label">Name</label>
+                            <label for="storage_name" class="form-label">{{call .T "storage.name"}}</label>
                             <input type="text" id="storage_name" name="name" 
-                                   class="form-input" placeholder="My Backup Storage" required>
+                                   class="form-input" placeholder="{{call .T "storage.name_placeholder"}}" required>
                         </div>
                         <div class="form-group">
-                            <label for="storage_type" class="form-label">Type</label>
+                            <label for="storage_type" class="form-label">{{call .T "common.type"}}</label>
                             <select id="storage_type" name="type" class="form-select" required>
-                                <option value="">Choose storage type...</option>
+                                <option value="">{{call .T "storage.select_type"}}</option>
                                 <option value="webdav">WebDAV</option>
-                                <option value="s3">Amazon S3 / Compatible</option>
+                                <option value="s3">{{call .T "storage.s3_compatible"}}</option>
                             </select>
                         </div>
                     </div>
@@ -45,22 +48,22 @@
                 <div id="webdav-fields" class="storage-config webdav-config" style="display: none;">
                     <div class="config-header">
                         <iconify-icon icon="mdi:cloud-upload" class="config-icon"></iconify-icon>
-                        <h3>WebDAV Configuration</h3>
+                        <h3>{{call .T "storage.webdav_config"}}</h3>
                     </div>
                     <div class="form-section">
                         <div class="form-group">
-                            <label for="webdav_url" class="form-label">Server URL</label>
+                            <label for="webdav_url" class="form-label">{{call .T "storage.webdav.url"}}</label>
                             <input type="url" id="webdav_url" name="webdav_url" 
-                                   class="form-input" placeholder="https://webdav.example.com/remote.php/dav/files/username/">
+                                   class="form-input" placeholder="{{call .T "storage.webdav.url_placeholder"}}">
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="webdav_username" class="form-label">Username</label>
+                                <label for="webdav_username" class="form-label">{{call .T "auth.username"}}</label>
                                 <input type="text" id="webdav_username" name="webdav_username" 
-                                       class="form-input" placeholder="your-username">
+                                       class="form-input" placeholder="{{call .T "auth.username"}}">
                             </div>
                             <div class="form-group">
-                                <label for="webdav_password" class="form-label">Password</label>
+                                <label for="webdav_password" class="form-label">{{call .T "auth.password"}}</label>
                                 <input type="password" id="webdav_password" name="webdav_password" 
                                        class="form-input" placeholder="••••••••">
                             </div>
@@ -72,37 +75,37 @@
                 <div id="s3-fields" class="storage-config s3-config" style="display: none;">
                     <div class="config-header">
                         <iconify-icon icon="mdi:aws" class="config-icon"></iconify-icon>
-                        <h3>S3 Configuration</h3>
+                        <h3>{{call .T "storage.s3_config"}}</h3>
                     </div>
                     <div class="form-section">
                         <div class="form-group">
-                            <label for="s3_endpoint" class="form-label">Endpoint <span class="optional">(Optional)</span></label>
+                            <label for="s3_endpoint" class="form-label">{{call .T "storage.s3.endpoint"}} <span class="optional">({{call .T "storage.optional"}})</span></label>
                             <input type="text" id="s3_endpoint" name="s3_endpoint" 
-                                   class="form-input" placeholder="s3.amazonaws.com">
-                            <small class="form-hint">Leave empty for AWS S3, or specify custom endpoint for S3-compatible services</small>
+                                   class="form-input" placeholder="{{call .T "storage.s3.endpoint_placeholder"}}">
+                            <small class="form-hint">{{call .T "storage.s3.endpoint_hint"}}</small>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="s3_access_key_id" class="form-label">Access Key ID</label>
+                                <label for="s3_access_key_id" class="form-label">{{call .T "storage.s3.access_key_id"}}</label>
                                 <input type="text" id="s3_access_key_id" name="s3_access_key_id" 
                                        class="form-input" placeholder="AKIAIOSFODNN7EXAMPLE">
                             </div>
                             <div class="form-group">
-                                <label for="s3_secret_access_key" class="form-label">Secret Access Key</label>
+                                <label for="s3_secret_access_key" class="form-label">{{call .T "storage.s3.secret_access_key"}}</label>
                                 <input type="password" id="s3_secret_access_key" name="s3_secret_access_key" 
                                        class="form-input" placeholder="••••••••••••••••••••••••••••••••••••••••">
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="s3_region" class="form-label">Region</label>
+                                <label for="s3_region" class="form-label">{{call .T "storage.s3.region"}}</label>
                                 <input type="text" id="s3_region" name="s3_region" 
-                                       class="form-input" placeholder="us-east-1">
+                                       class="form-input" placeholder="{{call .T "storage.s3.region_placeholder"}}">
                             </div>
                             <div class="form-group">
-                                <label for="s3_bucket" class="form-label">Bucket Name</label>
+                                <label for="s3_bucket" class="form-label">{{call .T "storage.s3.bucket"}}</label>
                                 <input type="text" id="s3_bucket" name="s3_bucket" 
-                                       class="form-input" placeholder="my-backup-bucket">
+                                       class="form-input" placeholder="{{call .T "storage.s3.bucket_placeholder"}}">
                             </div>
                         </div>
                     </div>
@@ -114,7 +117,7 @@
                         <label class="checkbox-label">
                             <input type="checkbox" id="storage_enabled" name="enabled" checked>
                             <span class="checkbox-custom"></span>
-                            <span class="checkbox-text">Enable this storage immediately</span>
+                            <span class="checkbox-text">{{call .T "storage.enable_immediately"}}</span>
                         </label>
                     </div>
                 </div>
@@ -123,7 +126,7 @@
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">
                         <iconify-icon icon="mdi:plus"></iconify-icon>
-                        Add Storage Backend
+                        {{call .T "storage.add_backend"}}
                     </button>
                 </div>
             </form>
@@ -133,8 +136,8 @@
     <!-- Existing Storage Section -->
     <section class="storage-list-section">
         <div class="section-header">
-            <h2><iconify-icon icon="mdi:database-outline" class="section-icon"></iconify-icon>Your Storage Backends</h2>
-            <p class="section-description">Manage and monitor your configured storage destinations</p>
+            <h2><iconify-icon icon="mdi:database-outline" class="section-icon"></iconify-icon>{{call .T "storage.your_backends"}}</h2>
+            <p class="section-description">{{call .T "storage.manage_monitor_description"}}</p>
         </div>
         
         <div id="storage-list" class="storage-grid">
@@ -202,4 +205,37 @@ document.getElementById('storage-form').addEventListener('htmx:before-request', 
 document.getElementById('storage-form').addEventListener('reset', function() {
     document.getElementById('result').innerHTML = '';
 });
+
+// Auto-clear notifications after 5 seconds
+function setupNotificationAutoClear() {
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList') {
+                mutation.addedNodes.forEach(function(node) {
+                    if (node.nodeType === Node.ELEMENT_NODE && node.classList && node.classList.contains('result')) {
+                        setTimeout(function() {
+                            if (node.parentNode) {
+                                node.style.transition = 'opacity 0.5s ease-out';
+                                node.style.opacity = '0';
+                                setTimeout(function() {
+                                    if (node.parentNode) {
+                                        node.remove();
+                                    }
+                                }, 500);
+                            }
+                        }, 5000);
+                    }
+                });
+            }
+        });
+    });
+
+    const notificationsContainer = document.getElementById('sync-notifications');
+    if (notificationsContainer) {
+        observer.observe(notificationsContainer, { childList: true });
+    }
+}
+
+// Initialize notification system
+setupNotificationAutoClear();
 </script>

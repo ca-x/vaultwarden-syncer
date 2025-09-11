@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"net/http"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -1135,6 +1136,7 @@ func (h *Handler) EditStorage(c echo.Context) error {
 			{URL: "/", Icon: h.tmplManager.Icon("dashboard"), Text: translator.T(lang, "nav.dashboard")},
 			{URL: "/storage", Icon: h.tmplManager.Icon("database"), Text: translator.T(lang, "nav.storage")},
 			{URL: "/settings", Icon: h.tmplManager.Icon("settings"), Text: translator.T(lang, "nav.settings")},
+			{URL: "/system-info", Icon: h.tmplManager.Icon("information"), Text: translator.T(lang, "nav.system_info")},
 			{URL: "/logout", Icon: h.tmplManager.Icon("logout"), Text: translator.T(lang, "nav.logout")},
 		},
 		Content: template.HTML(content.String()),
@@ -1150,4 +1152,49 @@ func (h *Handler) EditStorage(c echo.Context) error {
 	}
 
 	return c.HTML(http.StatusOK, html)
+}
+
+// SystemInfo displays the system information page
+func (h *Handler) SystemInfo(c echo.Context) error {
+	if h.tmplManager == nil {
+		return c.String(http.StatusInternalServerError, "Template manager not available")
+	}
+
+	// Get language and translator from context
+	lang := i18n.GetLanguageFromContext(c.Request().Context())
+	translator := i18n.GetTranslatorFromContext(c.Request().Context())
+	if translator == nil {
+		translator = i18n.New()
+	}
+
+	// Get system information
+	systemInfo := h.getSystemInfo()
+
+	html, err := h.tmplManager.RenderSystemInfo(systemInfo, lang, translator)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to render system info page")
+	}
+
+	return c.HTML(http.StatusOK, html)
+}
+
+// GetVersionInfo returns version information as JSON
+func (h *Handler) GetVersionInfo(c echo.Context) error {
+	return c.JSON(http.StatusOK, h.getSystemInfo())
+}
+
+// getSystemInfo returns system information
+func (h *Handler) getSystemInfo() map[string]interface{} {
+	// Get runtime information
+	startTime := time.Now() // This should be stored globally when the app starts
+	uptime := time.Since(startTime).Truncate(time.Second)
+
+	return map[string]interface{}{
+		"version":     "v1.0.0", // This should come from build flags
+		"build_date":  "2024-01-01", // This should come from build flags
+		"git_commit":  "dev", // This should come from build flags
+		"go_version":  runtime.Version(),
+		"platform":    runtime.GOOS + "/" + runtime.GOARCH,
+		"uptime":      uptime.String(),
+	}
 }

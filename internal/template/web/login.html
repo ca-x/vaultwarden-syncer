@@ -1,5 +1,5 @@
 <div class="login-header">
-    <h1>{{ icon "alert-circle" }}{{call .T "auth.login.title"}}</h1>
+    <h1>{{call .T "auth.login.title"}}</h1>
     <p>{{call .T "auth.login.subtitle"}}</p>
 </div>
 
@@ -15,6 +15,5 @@
     </div>
     
     <button type="submit" class="btn btn-primary btn-full">{{call .T "auth.login.button"}}</button>
+    <div id="result" class="result" style="display: none;"></div>
 </form>
-
-<div id="result" class="result"></div>
