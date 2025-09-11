@@ -1,6 +1,6 @@
 {{if eq (len .Cards) 0}}
 <div class="glass-card card-compact">
-    <p style="text-align: center; color: rgba(255, 255, 255, 0.7);">📂 {{call .T "storage.no_backends"}}</p>
+    <p style="text-align: center; color: rgba(255, 255, 255, 0.7);"><iconify-icon icon="mdi:folder-open" style="margin-right: 0.5rem;"></iconify-icon>{{call .T "storage.no_backends"}}</p>
 </div>
 {{else}}
 {{range .Cards}}
@@ -17,10 +17,22 @@
         {{end}}
     {{end}}
     <p><strong>{{call .T "common.status"}}:</strong> <span style="color: {{.StatusColor}};">{{.Status}}</span></p>
+    <div class="sync-info">
+        <p><strong>{{call .T "sync.last_sync"}}:</strong> {{.LastSync}}</p>
+        <p class="sync-status {{.SyncStatusClass}}">
+            <iconify-icon icon="{{.SyncStatusIcon}}" class="{{.SyncStatusClass}}"></iconify-icon>
+            {{.LastSyncStatus}}
+        </p>
+        {{if .SyncError}}
+        <div class="error-details">
+            <small class="icon-danger">{{.SyncError}}</small>
+        </div>
+        {{end}}
+    </div>
     <p><strong>{{call .T "common.created"}}:</strong> {{.Created}}</p>
     <div class="storage-actions" style="display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap;">
-        <button hx-post="/api/sync/{{.ID}}" hx-target="#result" class="btn btn-primary" style="flex: 1; min-width: 100px;">🔄 {{call .T "storage.sync_now"}}</button>
-        <button hx-delete="/api/storage/{{.ID}}" hx-target="#result" hx-confirm="{{call .T "storage.delete_confirm"}}" class="btn btn-danger" style="flex: 1; min-width: 100px;">🗑️ {{call .T "common.delete"}}</button>
+        <button hx-post="/api/sync/{{.ID}}" hx-target="#result" class="btn btn-primary" style="flex: 1; min-width: 100px;"><iconify-icon icon="mdi:sync"></iconify-icon>{{call .T "storage.sync_now"}}</button>
+        <button hx-delete="/api/storage/{{.ID}}" hx-target="#result" hx-confirm="{{call .T "storage.delete_confirm"}}" class="btn btn-danger" style="flex: 1; min-width: 100px;"><iconify-icon icon="mdi:delete"></iconify-icon>{{call .T "common.delete"}}</button>
     </div>
 </div>
 {{end}}

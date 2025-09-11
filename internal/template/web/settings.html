@@ -1,10 +1,10 @@
 <header>
-    <h1>⚙️ {{call .T "settings.title"}}</h1>
+    <h1><iconify-icon icon="mdi:cog" class="icon-large icon-warning"></iconify-icon>{{call .T "settings.title"}}</h1>
 </header>
 
 <div class="grid grid-2">
     <section class="glass-card card">
-        <h2>🔐 {{call .T "settings.security"}}</h2>
+        <h2><iconify-icon icon="mdi:shield-lock" class="icon-danger"></iconify-icon>{{call .T "settings.security"}}</h2>
         <form>
             <div class="form-group">
                 <label for="jwt_secret">{{call .T "settings.jwt_secret"}}</label>
@@ -15,7 +15,7 @@
     </section>
     
     <section class="glass-card card">
-        <h2>📅 {{call .T "settings.sync_schedule"}}</h2>
+        <h2><iconify-icon icon="mdi:calendar-clock" class="icon-info"></iconify-icon>{{call .T "settings.sync_schedule"}}</h2>
         <form>
             <div class="form-group">
                 <label for="sync_interval">{{call .T "settings.sync_interval"}}</label>
@@ -35,7 +35,7 @@
     </section>
     
     <section class="glass-card card">
-        <h2>🗃️ {{call .T "settings.database"}}</h2>
+        <h2><iconify-icon icon="mdi:database-cog" class="icon-purple"></iconify-icon>{{call .T "settings.database"}}</h2>
         <p><strong>{{call .T "common.type"}}:</strong> SQLite</p>
         <p><strong>{{call .T "common.location"}}:</strong> ./data/syncer.db</p>
         <p><strong>{{call .T "common.size"}}:</strong> 2.1 MB</p>
@@ -46,7 +46,7 @@
     </section>
     
     <section class="glass-card card">
-        <h2>📊 {{call .T "settings.system_info"}}</h2>
+        <h2><iconify-icon icon="mdi:information" class="icon-success"></iconify-icon>{{call .T "settings.system_info"}}</h2>
         <p><strong>{{call .T "settings.version"}}:</strong> v1.0.0</p>
         <p><strong>{{call .T "settings.build"}}:</strong> 2025-09-11</p>
         <p><strong>Go {{call .T "settings.go_version"}}:</strong> go1.21</p>
@@ -55,4 +55,62 @@
             <button class="btn btn-outline">{{call .T "settings.download_logs"}}</button>
         </div>
     </section>
+    
+    <section class="glass-card card">
+        <h2><iconify-icon icon="mdi:history" class="icon-info"></iconify-icon>{{call .T "settings.sync_history"}}</h2>
+        <div id="sync-stats">
+            <p>{{call .T "settings.loading_stats"}}</p>
+        </div>
+        <div style="margin-top: 1rem;">
+            <button hx-post="/api/cleanup" hx-target="#cleanup-result" class="btn btn-outline" style="margin-right: 0.5rem;">
+                <iconify-icon icon="mdi:broom"></iconify-icon>{{call .T "settings.cleanup_history"}}
+            </button>
+        </div>
+        <div id="cleanup-result" style="margin-top: 1rem;"></div>
+    </section>
 </div>
+
+<script>
+// Load sync statistics
+function loadSyncStats() {
+    fetch('/api/stats')
+        .then(response => response.json())
+        .then(data => {
+            const statsContainer = document.getElementById('sync-stats');
+            statsContainer.innerHTML = `
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <strong>{{call .T "stats.total_records"}}:</strong> ${data.total_jobs}
+                    </div>
+                    <div class="stat-item">
+                        <strong>{{call .T "stats.successful"}}:</strong> 
+                        <span class="icon-success">${data.completed_jobs}</span>
+                    </div>
+                    <div class="stat-item">
+                        <strong>{{call .T "stats.failed"}}:</strong> 
+                        <span class="icon-danger">${data.failed_jobs}</span>
+                    </div>
+                    <div class="stat-item">
+                        <strong>{{call .T "stats.retention_days"}}:</strong> ${data.retention_days}
+                    </div>
+                    ${data.oldest_record ? `
+                    <div class="stat-item">
+                        <strong>{{call .T "stats.oldest_record"}}:</strong> ${data.oldest_record}
+                    </div>` : ''}
+                    ${data.newest_record ? `
+                    <div class="stat-item">
+                        <strong>{{call .T "stats.newest_record"}}:</strong> ${data.newest_record}
+                    </div>` : ''}
+                </div>
+            `;
+        })
+        .catch(error => {
+            console.error('Failed to load sync statistics:', error);
+            document.getElementById('sync-stats').innerHTML = 
+                '<p class="icon-danger">{{call .T "stats.load_error"}}</p>';
+        });
+}
+
+// Load stats on page load
+document.addEventListener('DOMContentLoaded', loadSyncStats);
+</script>

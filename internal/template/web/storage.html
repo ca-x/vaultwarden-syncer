@@ -1,8 +1,8 @@
-<h1>💾 {{call .T "storage.title"}}</h1>
+<h1><iconify-icon icon="mdi:database" class="icon-large icon-purple"></iconify-icon>{{call .T "storage.title"}}</h1>
 
 <div class="grid grid-2">
     <section class="glass-card card">
-        <h2>➕ {{call .T "common.add"}}</h2>
+        <h2><iconify-icon icon="mdi:plus-circle" class="icon-success"></iconify-icon>{{call .T "common.add"}}</h2>
         <form id="storage-form" hx-post="/api/storage" hx-target="#result">
             <div class="form-group">
                 <label for="storage_name">{{call .T "storage.name"}}</label>
@@ -71,7 +71,7 @@
     </section>
     
     <section class="glass-card card">
-        <h2>📝 {{call .T "storage.existing"}}</h2>
+        <h2><iconify-icon icon="mdi:format-list-bulleted" class="icon-info"></iconify-icon>{{call .T "storage.existing"}}</h2>
         <div id="storage-list">
             {{.StorageCards}}
         </div>

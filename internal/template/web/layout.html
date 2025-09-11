@@ -12,7 +12,7 @@
     {{if .ShowNav}}
     <nav>
         <ul>
-            <li><strong>🔐 Vaultwarden Syncer</strong></li>
+            <li><strong class="brand-logo"><iconify-icon icon="mdi:shield-lock"></iconify-icon>Vaultwarden Syncer</strong></li>
         </ul>
         <ul>
             {{range .NavItems}}
@@ -23,6 +23,12 @@
     {{end}}
     
     <main class="container{{if .AuthLayout}} glass-card auth-container{{end}}">
+        {{if .Message}}
+        <div class="message message-{{.Message.Type}}">
+            {{.Message.Icon}}
+            <span>{{.Message.Content}}</span>
+        </div>
+        {{end}}
         {{.Content}}
     </main>
 </body>

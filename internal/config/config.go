@@ -86,9 +86,10 @@ func (c S3Config) Validate() error {
 }
 
 type SyncConfig struct {
-	Interval         int    `mapstructure:"interval"`
-	CompressionLevel int    `mapstructure:"compression_level"`
-	Password         string `mapstructure:"password"`
+	Interval           int    `mapstructure:"interval"`
+	CompressionLevel   int    `mapstructure:"compression_level"`
+	Password           string `mapstructure:"password"`
+	HistoryRetentionDays int  `mapstructure:"history_retention_days"`
 }
 
 type LoggingConfig struct {
@@ -106,6 +107,7 @@ func Load() (*Config, error) {
 	viper.SetDefault("database.dsn", "./data/syncer.db")
 	viper.SetDefault("sync.interval", 3600)
 	viper.SetDefault("sync.compression_level", 6)
+	viper.SetDefault("sync.history_retention_days", 30)
 	viper.SetDefault("logging.level", "info")
 	viper.SetDefault("logging.file", "./logs/vaultwarden-syncer.log")
 	viper.SetDefault("vaultwarden.data_path", "./data/vaultwarden")

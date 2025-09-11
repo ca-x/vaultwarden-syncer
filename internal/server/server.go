@@ -74,6 +74,9 @@ func New(cfg *config.Config, handler *handler.Handler, authService *auth.Service
 	protected.DELETE("/api/storage/:id", handler.DeleteStorage)
 	protected.POST("/api/sync/:id", handler.TriggerSync)
 	protected.GET("/api/jobs", handler.GetSyncJobs)
+	protected.GET("/api/sync/status", handler.GetSyncStatus)
+	protected.POST("/api/cleanup", handler.TriggerCleanup)
+	protected.GET("/api/stats", handler.GetSyncJobStats)
 
 	return &Server{
 		echo:   e,

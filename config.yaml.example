@@ -60,6 +60,9 @@ sync:
   compression_level: 6
   # Password for backup encryption (optional, leave empty to disable)
   password: ""
+  # History retention in days (sync job records older than this will be automatically deleted)
+  # Default: 30 days, set to 0 to disable automatic cleanup
+  history_retention_days: 30
 
 # Logging configuration
 logging:

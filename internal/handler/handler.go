@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -10,7 +11,9 @@ import (
 	"github.com/ca-x/vaultwarden-syncer/ent"
 	"github.com/ca-x/vaultwarden-syncer/ent/storage"
 	"github.com/ca-x/vaultwarden-syncer/ent/syncjob"
+	"github.com/ca-x/vaultwarden-syncer/internal/cleanup"
 	"github.com/ca-x/vaultwarden-syncer/internal/i18n"
+	"github.com/ca-x/vaultwarden-syncer/internal/scheduler"
 	"github.com/ca-x/vaultwarden-syncer/internal/service"
 	"github.com/ca-x/vaultwarden-syncer/internal/setup"
 	"github.com/ca-x/vaultwarden-syncer/internal/sync"
@@ -20,14 +23,16 @@ import (
 )
 
 type Handler struct {
-	userService  *service.UserService
-	setupService *setup.SetupService
-	syncService  *sync.Service
-	client       *ent.Client
-	tmplManager  *template.Manager
+	userService     *service.UserService
+	setupService    *setup.SetupService
+	syncService     *sync.Service
+	cleanupService  *cleanup.Service
+	schedulerService *scheduler.Service
+	client          *ent.Client
+	tmplManager     *template.Manager
 }
 
-func New(userService *service.UserService, setupService *setup.SetupService, syncService *sync.Service, client *ent.Client) *Handler {
+func New(userService *service.UserService, setupService *setup.SetupService, syncService *sync.Service, cleanupService *cleanup.Service, schedulerService *scheduler.Service, client *ent.Client) *Handler {
 	tmplManager, err := template.New()
 	if err != nil {
 		// Log error but don't fail, fallback to basic responses
@@ -36,11 +41,13 @@ func New(userService *service.UserService, setupService *setup.SetupService, syn
 	}
 
 	return &Handler{
-		userService:  userService,
-		setupService: setupService,
-		syncService:  syncService,
-		client:       client,
-		tmplManager:  tmplManager,
+		userService:      userService,
+		setupService:     setupService,
+		syncService:      syncService,
+		cleanupService:   cleanupService,
+		schedulerService: schedulerService,
+		client:           client,
+		tmplManager:      tmplManager,
 	}
 }
 
@@ -70,11 +77,42 @@ func (h *Handler) Index(c echo.Context) error {
 		storageCount = 0 // fallback on error
 	}
 
-	// Get last sync job
+	// Get last sync job with detailed status
 	lastSyncTime := translator.T(lang, "time.never")
-	lastJob, err := h.client.SyncJob.Query().Order(ent.Desc(syncjob.FieldCreatedAt)).First(c.Request().Context())
+	syncStatus := translator.T(lang, "status.no_sync")
+	syncStatusClass := "icon-info"
+	syncStatusIcon := "mdi:information"
+	lastSyncError := ""
+	
+	lastJob, err := h.client.SyncJob.Query().
+		WithStorage().
+		Order(ent.Desc(syncjob.FieldCreatedAt)).
+		First(c.Request().Context())
+	
 	if err == nil {
 		lastSyncTime = lastJob.CreatedAt.Format("2006-01-02 15:04")
+		
+		switch lastJob.Status {
+		case syncjob.StatusCompleted:
+			syncStatus = translator.T(lang, "status.sync_success")
+			syncStatusClass = "icon-success"
+			syncStatusIcon = "mdi:check-circle"
+		case syncjob.StatusFailed:
+			syncStatus = translator.T(lang, "status.sync_failed")
+			syncStatusClass = "icon-danger"
+			syncStatusIcon = "mdi:alert-circle"
+			if lastJob.Message != "" {
+				lastSyncError = lastJob.Message
+			}
+		case syncjob.StatusRunning:
+			syncStatus = translator.T(lang, "status.sync_running")
+			syncStatusClass = "icon-warning"
+			syncStatusIcon = "mdi:sync"
+		case syncjob.StatusPending:
+			syncStatus = translator.T(lang, "status.sync_pending")
+			syncStatusClass = "icon-info"
+			syncStatusIcon = "mdi:clock"
+		}
 	}
 
 	// Get sync jobs count
@@ -84,11 +122,15 @@ func (h *Handler) Index(c echo.Context) error {
 	}
 
 	dashboardData := template.DashboardData{
-		StorageCount: storageCount,
-		LastSync:     lastSyncTime,
-		BackupSize:   translator.T(lang, "status.calculating"),
-		TotalBackups: jobsCount,
-		SystemStatus: translator.T(lang, "status.operational"),
+		StorageCount:    storageCount,
+		LastSync:        lastSyncTime,
+		BackupSize:      translator.T(lang, "status.calculating"),
+		TotalBackups:    jobsCount,
+		SystemStatus:    translator.T(lang, "status.operational"),
+		SyncStatus:      syncStatus,
+		SyncStatusClass: syncStatusClass,
+		SyncStatusIcon:  syncStatusIcon,
+		LastSyncError:   lastSyncError,
 	}
 
 	html, err := h.tmplManager.RenderDashboard(dashboardData, lang, translator)
@@ -182,14 +224,39 @@ func (h *Handler) Login(c echo.Context) error {
 func (h *Handler) HandleLogin(c echo.Context) error {
 	username := c.FormValue("username")
 	password := c.FormValue("password")
+	
+	// Get language and translator from context
+	lang := i18n.GetLanguageFromContext(c.Request().Context())
+	translator := i18n.GetTranslatorFromContext(c.Request().Context())
+	if translator == nil {
+		translator = i18n.New()
+	}
 
 	if username == "" || password == "" {
-		return c.HTML(http.StatusBadRequest, `<div style="color: red;">Username and password are required</div>`)
+		if h.tmplManager == nil {
+			return c.HTML(http.StatusBadRequest, `<div class="result error">Username and password are required</div>`)
+		}
+		
+		message := h.tmplManager.CreateMessage("error", translator.T(lang, "auth.error.missing_fields"))
+		html, err := h.tmplManager.RenderLoginWithMessage(lang, translator, message)
+		if err != nil {
+			return c.HTML(http.StatusBadRequest, `<div class="result error">Username and password are required</div>`)
+		}
+		return c.HTML(http.StatusBadRequest, html)
 	}
 
 	token, user, err := h.userService.Authenticate(c.Request().Context(), username, password)
 	if err != nil {
-		return c.HTML(http.StatusUnauthorized, `<div style="color: red;">Invalid credentials</div>`)
+		if h.tmplManager == nil {
+			return c.HTML(http.StatusUnauthorized, `<div class="result error">Invalid credentials</div>`)
+		}
+		
+		message := h.tmplManager.CreateMessage("error", translator.T(lang, "auth.error.invalid_credentials"))
+		html, err := h.tmplManager.RenderLoginWithMessage(lang, translator, message)
+		if err != nil {
+			return c.HTML(http.StatusUnauthorized, `<div class="result error">Invalid credentials</div>`)
+		}
+		return c.HTML(http.StatusUnauthorized, html)
 	}
 
 	cookie := &http.Cookie{
@@ -204,11 +271,17 @@ func (h *Handler) HandleLogin(c echo.Context) error {
 
 	// Use HTMX redirect header to navigate to dashboard
 	c.Response().Header().Set("HX-Redirect", "/")
-	return c.HTML(http.StatusOK, `
-		<div style="color: green;">
-			<p>Welcome, `+user.Username+`! Redirecting...</p>
-		</div>
-	`)
+	
+	if h.tmplManager == nil {
+		return c.HTML(http.StatusOK, `<div class="result success">Welcome, `+user.Username+`! Redirecting...</div>`)
+	}
+	
+	message := h.tmplManager.CreateMessage("success", translator.T(lang, "auth.success.welcome", user.Username))
+	html, err := h.tmplManager.RenderLoginWithMessage(lang, translator, message)
+	if err != nil {
+		return c.HTML(http.StatusOK, `<div class="result success">Welcome, `+user.Username+`! Redirecting...</div>`)
+	}
+	return c.HTML(http.StatusOK, html)
 }
 
 // Logout handles user logout
@@ -245,7 +318,7 @@ func (h *Handler) StorageList(c echo.Context) error {
 		translator = i18n.New()
 	}
 
-	html, err := h.tmplManager.RenderStorage(storages, lang, translator)
+	html, err := h.tmplManager.RenderStorage(storages, h.client, lang, translator)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to render storage page")
 	}
@@ -352,7 +425,7 @@ func (h *Handler) CreateStorage(c echo.Context) error {
 
 	// Render updated storage cards
 	if h.tmplManager != nil {
-		storageCards, err := h.tmplManager.RenderStorageCards(storages, lang, translator)
+		storageCards, err := h.tmplManager.RenderStorageCards(storages, h.client, lang, translator)
 		if err == nil {
 			return c.HTML(http.StatusOK, fmt.Sprintf(`
 				<div style="color: green;">Storage created successfully!</div>
@@ -457,7 +530,7 @@ func (h *Handler) UpdateStorage(c echo.Context) error {
 
 	// Render updated storage cards
 	if h.tmplManager != nil {
-		storageCards, err := h.tmplManager.RenderStorageCards(storages, lang, translator)
+		storageCards, err := h.tmplManager.RenderStorageCards(storages, h.client, lang, translator)
 		if err == nil {
 			return c.HTML(http.StatusOK, fmt.Sprintf(`
 				<div style="color: green;">Storage updated successfully!</div>
@@ -491,16 +564,32 @@ func (h *Handler) DeleteStorage(c echo.Context) error {
 func (h *Handler) TriggerSync(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid storage ID"})
+		return c.HTML(http.StatusBadRequest, `<div class="result error">Invalid storage ID</div>`)
 	}
 
+	// Check if storage exists and is enabled
+	storage, err := h.client.Storage.Get(c.Request().Context(), id)
+	if err != nil {
+		return c.HTML(http.StatusNotFound, `<div class="result error">Storage not found</div>`)
+	}
+
+	if !storage.Enabled {
+		return c.HTML(http.StatusBadRequest, `<div class="result error">Storage is disabled</div>`)
+	}
+
+	// Start sync in background
 	go func() {
-		if err := h.syncService.SyncToStorage(c.Request().Context(), id); err != nil {
-			// Log error but don't block the response
+		ctx := context.Background() // Use background context for async operation
+		if err := h.syncService.SyncToStorage(ctx, id); err != nil {
+			// Log error for debugging
+			fmt.Printf("Sync failed for storage %d: %v\n", id, err)
 		}
 	}()
 
-	return c.JSON(http.StatusOK, map[string]string{"message": "Sync triggered successfully"})
+	return c.HTML(http.StatusOK, `<div class="result success">
+		<iconify-icon icon="mdi:sync" class="icon-success"></iconify-icon>
+		Sync triggered successfully! Check the dashboard for progress.
+	</div>`)
 }
 
 // GetSyncJobs returns the list of sync jobs
@@ -517,4 +606,85 @@ func (h *Handler) GetSyncJobs(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, jobs)
+}
+
+// GetSyncStatus returns the current sync status for dashboard
+func (h *Handler) GetSyncStatus(c echo.Context) error {
+	// Get language and translator from context
+	lang := i18n.GetLanguageFromContext(c.Request().Context())
+	translator := i18n.GetTranslatorFromContext(c.Request().Context())
+	if translator == nil {
+		translator = i18n.New()
+	}
+
+	// Get last sync job with detailed status
+	syncStatus := translator.T(lang, "status.no_sync")
+	syncStatusClass := "icon-info"
+	syncStatusIcon := "mdi:information"
+	lastSyncTime := translator.T(lang, "time.never")
+	lastSyncError := ""
+	
+	lastJob, err := h.client.SyncJob.Query().
+		WithStorage().
+		Order(ent.Desc(syncjob.FieldCreatedAt)).
+		First(c.Request().Context())
+	
+	if err == nil {
+		lastSyncTime = lastJob.CreatedAt.Format("2006-01-02 15:04")
+		
+		switch lastJob.Status {
+		case syncjob.StatusCompleted:
+			syncStatus = translator.T(lang, "status.sync_success")
+			syncStatusClass = "icon-success"
+			syncStatusIcon = "mdi:check-circle"
+		case syncjob.StatusFailed:
+			syncStatus = translator.T(lang, "status.sync_failed")
+			syncStatusClass = "icon-danger"
+			syncStatusIcon = "mdi:alert-circle"
+			if lastJob.Message != "" {
+				lastSyncError = lastJob.Message
+			}
+		case syncjob.StatusRunning:
+			syncStatus = translator.T(lang, "status.sync_running")
+			syncStatusClass = "icon-warning"
+			syncStatusIcon = "mdi:sync"
+		case syncjob.StatusPending:
+			syncStatus = translator.T(lang, "status.sync_pending")
+			syncStatusClass = "icon-info"
+			syncStatusIcon = "mdi:clock"
+		}
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"status":      syncStatus,
+		"statusClass": syncStatusClass,
+		"statusIcon":  syncStatusIcon,
+		"lastSync":    lastSyncTime,
+		"error":       lastSyncError,
+	})
+}
+
+// TriggerCleanup manually triggers cleanup of old sync job records
+func (h *Handler) TriggerCleanup(c echo.Context) error {
+	go func() {
+		ctx := context.Background()
+		if err := h.schedulerService.RunCleanupNow(ctx); err != nil {
+			fmt.Printf("Manual cleanup failed: %v\n", err)
+		}
+	}()
+
+	return c.HTML(http.StatusOK, `<div class="result success">
+		<iconify-icon icon="mdi:broom" class="icon-success"></iconify-icon>
+		Cleanup triggered successfully! Old sync records are being removed.
+	</div>`)
+}
+
+// GetSyncJobStats returns statistics about sync job records
+func (h *Handler) GetSyncJobStats(c echo.Context) error {
+	stats, err := h.cleanupService.GetSyncJobStats(c.Request().Context())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to get sync job statistics"})
+	}
+
+	return c.JSON(http.StatusOK, stats)
 }

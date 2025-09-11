@@ -2,6 +2,7 @@ package template
 
 import (
 	"bytes"
+	"context"
 	"embed"
 	"fmt"
 	"html/template"
@@ -9,7 +10,10 @@ import (
 	"sync"
 
 	"github.com/ca-x/vaultwarden-syncer/ent"
+	"github.com/ca-x/vaultwarden-syncer/ent/storage"
+	"github.com/ca-x/vaultwarden-syncer/ent/syncjob"
 	"github.com/ca-x/vaultwarden-syncer/internal/i18n"
+	"github.com/ca-x/vaultwarden-syncer/internal/icons"
 )
 
 //go:embed web/*
@@ -17,7 +21,8 @@ var Assets embed.FS
 
 // Manager handles template rendering
 type Manager struct {
-	templates *template.Template
+	templates   *template.Template
+	iconManager *icons.IconManager
 }
 
 // Singleton instance for template manager
@@ -27,8 +32,15 @@ var initOnce sync.Once
 // NavItem represents a navigation item
 type NavItem struct {
 	URL  string
-	Icon string
+	Icon template.HTML
 	Text string
+}
+
+// Message represents a user message
+type Message struct {
+	Type    string // success, error, warning, info
+	Content string
+	Icon    template.HTML
 }
 
 // PageData represents the data passed to templates
@@ -41,40 +53,64 @@ type PageData struct {
 	Data       interface{}
 	Lang       i18n.Language
 	T          func(string, ...interface{}) string
+	Message    *Message
 }
 
 // StorageCardData represents storage card data
 type StorageCardData struct {
-	ID          int                    `json:"id"`
-	Name        string                 `json:"name"`
-	Type        string                 `json:"type"`
-	Status      string                 `json:"status"`
-	StatusColor string                 `json:"status_color"`
-	Created     string                 `json:"created"`
-	Icon        string                 `json:"icon"`
-	Config      map[string]interface{} `json:"config,omitempty"`
+	ID              int                    `json:"id"`
+	Name            string                 `json:"name"`
+	Type            string                 `json:"type"`
+	Status          string                 `json:"status"`
+	StatusColor     string                 `json:"status_color"`
+	Created         string                 `json:"created"`
+	Icon            template.HTML          `json:"icon"`
+	Config          map[string]interface{} `json:"config,omitempty"`
+	LastSync        string                 `json:"last_sync"`
+	LastSyncStatus  string                 `json:"last_sync_status"`
+	SyncStatusIcon  string                 `json:"sync_status_icon"`
+	SyncStatusClass string                 `json:"sync_status_class"`
+	SyncError       string                 `json:"sync_error,omitempty"`
 }
 
 // DashboardData represents dashboard statistics
 type DashboardData struct {
-	StorageCount int
-	LastSync     string
-	BackupSize   string
-	TotalBackups int
-	SystemStatus string
+	StorageCount     int
+	LastSync         string
+	BackupSize       string
+	TotalBackups     int
+	SystemStatus     string
+	SyncStatus       string
+	SyncStatusClass  string
+	SyncStatusIcon   string
+	LastSyncError    string
 }
 
 // New creates a new template manager with singleton pattern for efficiency
 func New() (*Manager, error) {
 	var err error
 	initOnce.Do(func() {
-		tmpl, e := template.ParseFS(Assets, "web/*.html")
+		iconMgr, e := icons.New()
+		if e != nil {
+			err = fmt.Errorf("failed to initialize icon manager: %w", e)
+			return
+		}
+		
+		// Create template functions
+		funcMap := template.FuncMap{
+			"icon": iconMgr.Get,
+			"iconWithClass": iconMgr.GetWithClass,
+		}
+		
+		tmpl, e := template.New("").Funcs(funcMap).ParseFS(Assets, "web/*.html")
 		if e != nil {
 			err = fmt.Errorf("failed to parse templates: %w", e)
 			return
 		}
+		
 		templateManager = &Manager{
-			templates: tmpl,
+			templates:   tmpl,
+			iconManager: iconMgr,
 		}
 	})
 
@@ -109,10 +145,10 @@ func (m *Manager) RenderDashboard(data DashboardData, lang i18n.Language, transl
 		AuthLayout: false,
 		ShowNav:    true,
 		NavItems: []NavItem{
-			{URL: "/", Icon: "🏠", Text: translator.T(lang, "nav.dashboard")},
-			{URL: "/storage", Icon: "💾", Text: translator.T(lang, "nav.storage")},
-			{URL: "/settings", Icon: "⚙️", Text: translator.T(lang, "nav.settings")},
-			{URL: "/logout", Icon: "🚪", Text: translator.T(lang, "nav.logout")},
+			{URL: "/", Icon: m.Icon("dashboard"), Text: translator.T(lang, "nav.dashboard")},
+			{URL: "/storage", Icon: m.Icon("database"), Text: translator.T(lang, "nav.storage")},
+			{URL: "/settings", Icon: m.Icon("settings"), Text: translator.T(lang, "nav.settings")},
+			{URL: "/logout", Icon: m.Icon("logout"), Text: translator.T(lang, "nav.logout")},
 		},
 		Content: template.HTML(content.String()),
 		Lang:    lang,
@@ -126,6 +162,11 @@ func (m *Manager) RenderDashboard(data DashboardData, lang i18n.Language, transl
 
 // RenderLogin renders the login page
 func (m *Manager) RenderLogin(lang i18n.Language, translator *i18n.Translator) (string, error) {
+	return m.RenderLoginWithMessage(lang, translator, nil)
+}
+
+// RenderLoginWithMessage renders the login page with a message
+func (m *Manager) RenderLoginWithMessage(lang i18n.Language, translator *i18n.Translator, message *Message) (string, error) {
 	// Create template data with translations
 	templateData := struct {
 		T func(string, ...interface{}) string
@@ -147,6 +188,7 @@ func (m *Manager) RenderLogin(lang i18n.Language, translator *i18n.Translator) (
 		ShowNav:    false,
 		Content:    template.HTML(content.String()),
 		Lang:       lang,
+		Message:    message,
 		T: func(key string, args ...interface{}) string {
 			return translator.T(lang, key, args...)
 		},
@@ -187,9 +229,9 @@ func (m *Manager) RenderSetup(lang i18n.Language, translator *i18n.Translator) (
 }
 
 // RenderStorage renders the storage management page
-func (m *Manager) RenderStorage(storages []*ent.Storage, lang i18n.Language, translator *i18n.Translator) (string, error) {
+func (m *Manager) RenderStorage(storages []*ent.Storage, client *ent.Client, lang i18n.Language, translator *i18n.Translator) (string, error) {
 	// Render storage cards
-	storageCards, err := m.RenderStorageCards(storages, lang, translator)
+	storageCards, err := m.RenderStorageCards(storages, client, lang, translator)
 	if err != nil {
 		return "", err
 	}
@@ -215,9 +257,9 @@ func (m *Manager) RenderStorage(storages []*ent.Storage, lang i18n.Language, tra
 		AuthLayout: false,
 		ShowNav:    true,
 		NavItems: []NavItem{
-			{URL: "/", Icon: "🏠", Text: translator.T(lang, "nav.dashboard")},
-			{URL: "/settings", Icon: "⚙️", Text: translator.T(lang, "nav.settings")},
-			{URL: "/logout", Icon: "🚪", Text: translator.T(lang, "nav.logout")},
+			{URL: "/", Icon: m.Icon("dashboard"), Text: translator.T(lang, "nav.dashboard")},
+			{URL: "/settings", Icon: m.Icon("settings"), Text: translator.T(lang, "nav.settings")},
+			{URL: "/logout", Icon: m.Icon("logout"), Text: translator.T(lang, "nav.logout")},
 		},
 		Content: template.HTML(content.String()),
 		Lang:    lang,
@@ -251,9 +293,9 @@ func (m *Manager) RenderSettings(lang i18n.Language, translator *i18n.Translator
 		AuthLayout: false,
 		ShowNav:    true,
 		NavItems: []NavItem{
-			{URL: "/", Icon: "🏠", Text: translator.T(lang, "nav.dashboard")},
-			{URL: "/storage", Icon: "💾", Text: translator.T(lang, "nav.storage")},
-			{URL: "/logout", Icon: "🚪", Text: translator.T(lang, "nav.logout")},
+			{URL: "/", Icon: m.Icon("dashboard"), Text: translator.T(lang, "nav.dashboard")},
+			{URL: "/storage", Icon: m.Icon("database"), Text: translator.T(lang, "nav.storage")},
+			{URL: "/logout", Icon: m.Icon("logout"), Text: translator.T(lang, "nav.logout")},
 		},
 		Content: template.HTML(content.String()),
 		Lang:    lang,
@@ -266,7 +308,7 @@ func (m *Manager) RenderSettings(lang i18n.Language, translator *i18n.Translator
 }
 
 // RenderStorageCards renders storage cards
-func (m *Manager) RenderStorageCards(storages []*ent.Storage, lang i18n.Language, translator *i18n.Translator) (string, error) {
+func (m *Manager) RenderStorageCards(storages []*ent.Storage, client *ent.Client, lang i18n.Language, translator *i18n.Translator) (string, error) {
 	var cards []StorageCardData
 
 	for _, s := range storages {
@@ -277,20 +319,66 @@ func (m *Manager) RenderStorageCards(storages []*ent.Storage, lang i18n.Language
 			statusColor = "var(--apple-green)"
 		}
 
-		typeIcon := "🌐"
+		typeIcon := m.Icon("web")
 		if string(s.Type) == "s3" {
-			typeIcon = "☁️"
+			typeIcon = m.Icon("aws")
+		}
+
+		// Get last sync info for this storage
+		lastSync := translator.T(lang, "time.never")
+		lastSyncStatus := translator.T(lang, "status.no_sync")
+		syncStatusIcon := "info"
+		syncStatusClass := "icon-info"
+		syncError := ""
+
+		if client != nil {
+			ctx := context.Background()
+			lastJob, err := client.SyncJob.Query().
+				Where(syncjob.HasStorageWith(storage.IDEQ(s.ID))).
+				Order(ent.Desc(syncjob.FieldCreatedAt)).
+				First(ctx)
+			
+			if err == nil {
+				lastSync = lastJob.CreatedAt.Format("2006-01-02 15:04")
+				
+				switch lastJob.Status {
+				case syncjob.StatusCompleted:
+					lastSyncStatus = translator.T(lang, "status.sync_success")
+					syncStatusClass = "icon-success"
+					syncStatusIcon = "check-circle"
+				case syncjob.StatusFailed:
+					lastSyncStatus = translator.T(lang, "status.sync_failed")
+					syncStatusClass = "icon-danger"
+					syncStatusIcon = "alert-circle"
+					if lastJob.Message != "" {
+						syncError = lastJob.Message
+					}
+				case syncjob.StatusRunning:
+					lastSyncStatus = translator.T(lang, "status.sync_running")
+					syncStatusClass = "icon-warning"
+					syncStatusIcon = "sync"
+				case syncjob.StatusPending:
+					lastSyncStatus = translator.T(lang, "status.sync_pending")
+					syncStatusClass = "icon-info"
+					syncStatusIcon = "clock"
+				}
+			}
 		}
 
 		cards = append(cards, StorageCardData{
-			ID:          s.ID,
-			Name:        s.Name,
-			Type:        string(s.Type),
-			Status:      status,
-			StatusColor: statusColor,
-			Created:     s.CreatedAt.Format("2006-01-02 15:04"),
-			Icon:        typeIcon,
-			Config:      s.Config,
+			ID:              s.ID,
+			Name:            s.Name,
+			Type:            string(s.Type),
+			Status:          status,
+			StatusColor:     statusColor,
+			Created:         s.CreatedAt.Format("2006-01-02 15:04"),
+			Icon:            typeIcon,
+			Config:          s.Config,
+			LastSync:        lastSync,
+			LastSyncStatus:  lastSyncStatus,
+			SyncStatusIcon:  syncStatusIcon,
+			SyncStatusClass: syncStatusClass,
+			SyncError:       syncError,
 		})
 	}
 
@@ -335,4 +423,37 @@ func (m *Manager) ServeStatic(path string) (io.Reader, error) {
 		return nil, err
 	}
 	return file, nil
+}
+
+// Icon returns an SVG icon by name
+func (m *Manager) Icon(name string) template.HTML {
+	return m.iconManager.Get(name)
+}
+
+// IconWithClass returns an SVG icon with custom CSS class
+func (m *Manager) IconWithClass(name, class string) template.HTML {
+	return m.iconManager.GetWithClass(name, class)
+}
+
+// CreateMessage creates a message with appropriate icon
+func (m *Manager) CreateMessage(msgType, content string) *Message {
+	var icon template.HTML
+	switch msgType {
+	case "success":
+		icon = m.Icon("check-circle")
+	case "error":
+		icon = m.Icon("alert-circle")
+	case "warning":
+		icon = m.Icon("alert-circle")
+	case "info":
+		icon = m.Icon("info")
+	default:
+		icon = m.Icon("info")
+	}
+	
+	return &Message{
+		Type:    msgType,
+		Content: content,
+		Icon:    icon,
+	}
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/ca-x/vaultwarden-syncer/ent"
 	"github.com/ca-x/vaultwarden-syncer/internal/auth"
 	"github.com/ca-x/vaultwarden-syncer/internal/backup"
+	"github.com/ca-x/vaultwarden-syncer/internal/cleanup"
 	"github.com/ca-x/vaultwarden-syncer/internal/config"
 	"github.com/ca-x/vaultwarden-syncer/internal/database"
 	"github.com/ca-x/vaultwarden-syncer/internal/handler"
@@ -48,6 +49,9 @@ func main() {
 			service.NewUserService,
 			setup.NewSetupService,
 			sync.NewService,
+			func(client *ent.Client, cfg *config.Config) *cleanup.Service {
+				return cleanup.NewService(client, cfg)
+			},
 			scheduler.NewService,
 			handler.New,
 			server.New,

@@ -1,29 +1,92 @@
 <header>
-    <h1>📊 {{call .T "dashboard.title"}}</h1>
+    <h1><iconify-icon icon="mdi:chart-box" class="icon-large icon-info"></iconify-icon>{{call .T "dashboard.title"}}</h1>
 </header>
 
 <div class="grid grid-2">
     <section class="glass-card card">
-        <h2>🔄 {{call .T "dashboard.sync_status"}}</h2>
-        <p>{{call .T "status.operational"}}</p>
-        <small>{{call .T "dashboard.last_sync" .LastSync}}</small>
+        <h2><iconify-icon icon="mdi:sync" class="icon-info"></iconify-icon>{{call .T "dashboard.sync_status"}}</h2>
+        <div class="sync-status">
+            <p class="status-text {{.SyncStatusClass}}">
+                <iconify-icon icon="{{.SyncStatusIcon}}" class="{{.SyncStatusClass}}"></iconify-icon>
+                {{.SyncStatus}}
+            </p>
+            <small>{{call .T "dashboard.last_sync" .LastSync}}</small>
+            {{if .LastSyncError}}
+            <div class="error-message">
+                <iconify-icon icon="mdi:alert-circle" class="icon-danger"></iconify-icon>
+                {{.LastSyncError}}
+            </div>
+            {{end}}
+        </div>
     </section>
     
     <section class="glass-card card">
-        <h2>💾 {{call .T "dashboard.storage"}}</h2>
+        <h2><iconify-icon icon="mdi:database" class="icon-purple"></iconify-icon>{{call .T "dashboard.storage"}}</h2>
         <p>{{call .T "dashboard.storage_count" .StorageCount}}</p>
         <a href="/storage" class="btn btn-primary">{{call .T "dashboard.manage_storage"}}</a>
     </section>
     
     <section class="glass-card card">
-        <h2>📊 {{call .T "dashboard.statistics"}}</h2>
+        <h2><iconify-icon icon="mdi:chart-line" class="icon-success"></iconify-icon>{{call .T "dashboard.statistics"}}</h2>
         <p>{{call .T "dashboard.backup_size" .BackupSize}}</p>
         <small>{{call .T "dashboard.total_backups" .TotalBackups}}</small>
     </section>
     
     <section class="glass-card card">
-        <h2>⚙️ {{call .T "dashboard.settings"}}</h2>
+        <h2><iconify-icon icon="mdi:cog" class="icon-warning"></iconify-icon>{{call .T "dashboard.settings"}}</h2>
         <p>{{call .T "dashboard.system_config"}}</p>
         <a href="/settings" class="btn btn-outline">{{call .T "dashboard.configure"}}</a>
     </section>
 </div>
+
+<script>
+// Real-time sync status updates
+function updateSyncStatus() {
+    fetch('/api/sync/status')
+        .then(response => response.json())
+        .then(data => {
+            const statusElement = document.querySelector('.status-text');
+            const iconElement = statusElement.querySelector('iconify-icon');
+            const textNode = statusElement.childNodes[statusElement.childNodes.length - 1];
+            const lastSyncElement = document.querySelector('.sync-status small');
+            const errorElement = document.querySelector('.error-message');
+            
+            // Update status
+            statusElement.className = 'status-text ' + data.statusClass;
+            iconElement.setAttribute('icon', data.statusIcon);
+            iconElement.className = data.statusClass;
+            textNode.textContent = data.status;
+            
+            // Update last sync time
+            if (lastSyncElement) {
+                lastSyncElement.textContent = 'Last sync: ' + data.lastSync;
+            }
+            
+            // Update error message
+            if (data.error && data.error.trim() !== '') {
+                if (!errorElement) {
+                    const newErrorElement = document.createElement('div');
+                    newErrorElement.className = 'error-message';
+                    newErrorElement.innerHTML = '<iconify-icon icon="mdi:alert-circle" class="icon-danger"></iconify-icon>' + data.error;
+                    document.querySelector('.sync-status').appendChild(newErrorElement);
+                } else {
+                    errorElement.innerHTML = '<iconify-icon icon="mdi:alert-circle" class="icon-danger"></iconify-icon>' + data.error;
+                }
+            } else if (errorElement) {
+                errorElement.remove();
+            }
+        })
+        .catch(error => {
+            console.error('Failed to update sync status:', error);
+        });
+}
+
+// Update status every 5 seconds
+setInterval(updateSyncStatus, 5000);
+
+// Update immediately on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait a bit for initial page load
+    setTimeout(updateSyncStatus, 1000);
+});
+</script>
