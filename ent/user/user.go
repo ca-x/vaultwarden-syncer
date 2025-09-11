@@ -4,7 +4,7 @@ package user
 
 import (
 	"time"
-	
+
 	"entgo.io/ent/dialect/sql"
 )
 
@@ -51,8 +51,6 @@ func ValidColumn(column string) bool {
 }
 
 var (
-	// UsernameValidator is a validator for the "username" field. It is called by the builders before save.
-	UsernameValidator func(string) error
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.

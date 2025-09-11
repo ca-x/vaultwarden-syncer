@@ -31,11 +31,18 @@ func main() {
 			func(cfg *config.Config) *auth.Service {
 				return auth.New(cfg.Auth.JWTSecret)
 			},
-			func(cfg *config.Config) *backup.Service {
+			func(cfg *config.Config, log *zap.Logger) *backup.Service {
+				// Use the Vaultwarden data path from config, with fallback to default
+				vaultwardenDataPath := cfg.Vaultwarden.DataPath
+				if vaultwardenDataPath == "" {
+					vaultwardenDataPath = "./data/vaultwarden"
+				}
+				
 				return backup.NewService(backup.BackupOptions{
-					VaultwardenDataPath: "./data/vaultwarden",
+					VaultwardenDataPath: vaultwardenDataPath,
 					CompressionLevel:    cfg.Sync.CompressionLevel,
 					Password:           cfg.Sync.Password,
+					Logger:             log,
 				})
 			},
 			service.NewUserService,

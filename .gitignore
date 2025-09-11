@@ -1,0 +1,3 @@
+cmd/server/*.exe
+cmd/server/data/*.db*
+logs/*.log

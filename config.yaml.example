@@ -1,18 +1,74 @@
+# Vaultwarden Syncer Configuration File
+# Copy this file to config.yaml and customize the settings
+
+# Server configuration
 server:
   port: 8181
 
+# Database configuration
 database:
   driver: sqlite3
+  # SQLite database file path
+  # Note: Using entsqlite driver with WAL mode for better performance
+  # The actual DSN will be enhanced with WAL mode and foreign key support
   dsn: "./data/syncer.db"
 
+# Authentication configuration
 auth:
-  jwt_secret: "your-secret-key-here-replace-with-generated"
+  # JWT secret key for token signing (change this!)
+  jwt_secret: "your-secret-key-here-change-me"
 
+# Storage backends configuration
 storage:
-  webdav: []
-  s3: []
+  # WebDAV storage configurations
+  webdav:
+    - name: "Nextcloud"
+      url: "https://cloud.example.com/remote.php/webdav/"
+      username: "your-username"
+      password: "your-password"
+    # - name: "Another WebDAV"
+    #   url: "https://another-webdav.example.com/"
+    #   username: "username"
+    #   password: "password"
 
+  # S3-compatible storage configurations
+  s3:
+    - name: "AWS S3"
+      endpoint: ""  # Leave empty for AWS S3
+      access_key_id: "your-access-key"
+      secret_access_key: "your-secret-key"
+      region: "us-east-1"
+      bucket: "vaultwarden-backups"
+    - name: "MinIO"
+      endpoint: "https://minio.example.com"
+      access_key_id: "your-access-key"
+      secret_access_key: "your-secret-key"
+      region: "us-east-1"
+      bucket: "vaultwarden-backups"
+    # - name: "Other S3 Compatible"
+    #   endpoint: "https://storage.example.com"
+    #   access_key_id: "access-key"
+    #   secret_access_key: "secret-key"
+    #   region: "auto"
+    #   bucket: "backups"
+
+# Sync configuration
 sync:
-  interval: 3600          # seconds between syncs
-  compression_level: 6    # 1-9 compression level
-  password: ""            # optional password for backup archives
+  # Sync interval in seconds (3600 = 1 hour)
+  interval: 3600
+  # Compression level (1-9, 6 is default)
+  compression_level: 6
+  # Password for backup encryption (optional, leave empty to disable)
+  password: ""
+
+# Logging configuration
+logging:
+  # Log level: debug, info, warn, error
+  level: "info"
+  # Log file path (optional, leave empty for stdout only)
+  file: "./logs/vaultwarden-syncer.log"
+
+# Vaultwarden data configuration
+vaultwarden:
+  # Path to Vaultwarden data directory (usually mounted via Docker)
+  data_path: "./data/vaultwarden"

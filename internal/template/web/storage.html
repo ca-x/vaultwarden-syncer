@@ -1,0 +1,131 @@
+<h1>💾 {{call .T "storage.title"}}</h1>
+
+<div class="grid grid-2">
+    <section class="glass-card card">
+        <h2>➕ {{call .T "common.add"}}</h2>
+        <form id="storage-form" hx-post="/api/storage" hx-target="#result">
+            <div class="form-group">
+                <label for="storage_name">{{call .T "storage.name"}}</label>
+                <input type="text" id="storage_name" name="name" placeholder="{{call .T "storage.name_placeholder"}}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="storage_type">{{call .T "common.type"}}</label>
+                <select id="storage_type" name="type" required>
+                    <option value="">{{call .T "storage.select_type"}}</option>
+                    <option value="webdav">WebDAV</option>
+                    <option value="s3">S3</option>
+                </select>
+            </div>
+            
+            <!-- WebDAV specific fields -->
+            <div id="webdav-fields" class="storage-type-fields" style="display: none;">
+                <div class="form-group">
+                    <label for="webdav_url">{{call .T "storage.webdav.url"}}</label>
+                    <input type="url" id="webdav_url" name="webdav_url" placeholder="{{call .T "storage.webdav.url_placeholder"}}" required>
+                </div>
+                <div class="form-group">
+                    <label for="webdav_username">{{call .T "auth.username"}}</label>
+                    <input type="text" id="webdav_username" name="webdav_username" placeholder="{{call .T "auth.username"}}" required>
+                </div>
+                <div class="form-group">
+                    <label for="webdav_password">{{call .T "auth.password"}}</label>
+                    <input type="password" id="webdav_password" name="webdav_password" placeholder="{{call .T "auth.password"}}" required>
+                </div>
+            </div>
+            
+            <!-- S3 specific fields -->
+            <div id="s3-fields" class="storage-type-fields" style="display: none;">
+                <div class="form-group">
+                    <label for="s3_endpoint">{{call .T "storage.s3.endpoint"}}</label>
+                    <input type="text" id="s3_endpoint" name="s3_endpoint" placeholder="{{call .T "storage.s3.endpoint_placeholder"}}">
+                    <small>{{call .T "storage.s3.endpoint_hint"}}</small>
+                </div>
+                <div class="form-group">
+                    <label for="s3_access_key_id">{{call .T "storage.s3.access_key_id"}}</label>
+                    <input type="text" id="s3_access_key_id" name="s3_access_key_id" placeholder="{{call .T "storage.s3.access_key_id"}}" required>
+                </div>
+                <div class="form-group">
+                    <label for="s3_secret_access_key">{{call .T "storage.s3.secret_access_key"}}</label>
+                    <input type="password" id="s3_secret_access_key" name="s3_secret_access_key" placeholder="{{call .T "storage.s3.secret_access_key"}}" required>
+                </div>
+                <div class="form-group">
+                    <label for="s3_region">{{call .T "storage.s3.region"}}</label>
+                    <input type="text" id="s3_region" name="s3_region" placeholder="{{call .T "storage.s3.region_placeholder"}}" required>
+                </div>
+                <div class="form-group">
+                    <label for="s3_bucket">{{call .T "storage.s3.bucket"}}</label>
+                    <input type="text" id="s3_bucket" name="s3_bucket" placeholder="{{call .T "storage.s3.bucket_placeholder"}}" required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="storage_enabled" name="enabled" checked>
+                    {{call .T "storage.enabled"}}
+                </label>
+            </div>
+            
+            <button type="submit" class="btn btn-success btn-full">{{call .T "common.add"}}</button>
+        </form>
+    </section>
+    
+    <section class="glass-card card">
+        <h2>📝 {{call .T "storage.existing"}}</h2>
+        <div id="storage-list">
+            {{.StorageCards}}
+        </div>
+    </section>
+</div>
+
+<div id="result" class="result"></div>
+
+<script>
+// Show/hide storage type specific fields
+document.getElementById('storage_type').addEventListener('change', function() {
+    // Hide all storage type fields
+    document.querySelectorAll('.storage-type-fields').forEach(function(el) {
+        el.style.display = 'none';
+    });
+    
+    // Show selected storage type fields
+    const selectedType = this.value;
+    if (selectedType === 'webdav') {
+        document.getElementById('webdav-fields').style.display = 'block';
+    } else if (selectedType === 's3') {
+        document.getElementById('s3-fields').style.display = 'block';
+    }
+});
+
+// Handle form submission
+document.getElementById('storage-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const type = formData.get('type');
+    const config = {};
+    
+    // Extract config based on storage type
+    if (type === 'webdav') {
+        config.url = formData.get('webdav_url');
+        config.username = formData.get('webdav_username');
+        config.password = formData.get('webdav_password');
+    } else if (type === 's3') {
+        config.endpoint = formData.get('s3_endpoint');
+        config.access_key_id = formData.get('s3_access_key_id');
+        config.secret_access_key = formData.get('s3_secret_access_key');
+        config.region = formData.get('s3_region');
+        config.bucket = formData.get('s3_bucket');
+    }
+    
+    // Add config to form data as JSON
+    const hiddenConfigInput = document.createElement('input');
+    hiddenConfigInput.type = 'hidden';
+    hiddenConfigInput.name = 'config';
+    hiddenConfigInput.value = JSON.stringify(config);
+    this.appendChild(hiddenConfigInput);
+    
+    // Submit form via HTMX
+    htmx.trigger(this, 'submit');
+});
+</script>

@@ -1,0 +1,44 @@
+# Vaultwarden Syncer Configuration File
+
+# Server configuration
+server:
+  port: 8181
+
+# Database configuration
+database:
+  driver: sqlite3
+  # SQLite database file path
+  dsn: "./data/syncer_new.db"
+
+# Authentication configuration
+auth:
+  # JWT secret key for token signing
+  jwt_secret: "your-secret-key-here-change-me"
+
+# Storage backends configuration
+storage:
+  # WebDAV storage configurations
+  webdav: []
+  # S3-compatible storage configurations
+  s3: []
+
+# Sync configuration
+sync:
+  # Sync interval in seconds (3600 = 1 hour)
+  interval: 3600
+  # Compression level (1-9, 6 is default)
+  compression_level: 6
+  # Password for backup encryption (optional, leave empty to disable)
+  password: ""
+
+# Logging configuration
+logging:
+  # Log level: debug, info, warn, error
+  level: "info"
+  # Log file path (optional, leave empty for stdout only)
+  file: "./logs/vaultwarden-syncer.log"
+
+# Vaultwarden data configuration
+vaultwarden:
+  # Path to Vaultwarden data directory (usually mounted via Docker)
+  data_path: "./data/vaultwarden"

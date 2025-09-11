@@ -1,0 +1,20 @@
+<div class="login-header">
+    <h1>🔐 {{call .T "auth.login.title"}}</h1>
+    <p>{{call .T "auth.login.subtitle"}}</p>
+</div>
+
+<form hx-post="/api/login" hx-target="#result">
+    <div class="form-group">
+        <label for="username">{{call .T "auth.username"}}</label>
+        <input type="text" id="username" name="username" placeholder="{{call .T "auth.username"}}" required>
+    </div>
+    
+    <div class="form-group">
+        <label for="password">{{call .T "auth.password"}}</label>
+        <input type="password" id="password" name="password" placeholder="{{call .T "auth.password"}}" required>
+    </div>
+    
+    <button type="submit" class="btn btn-primary btn-full">{{call .T "auth.login.button"}}</button>
+</form>
+
+<div id="result" class="result"></div>

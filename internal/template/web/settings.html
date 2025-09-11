@@ -1,0 +1,58 @@
+<header>
+    <h1>⚙️ {{call .T "settings.title"}}</h1>
+</header>
+
+<div class="grid grid-2">
+    <section class="glass-card card">
+        <h2>🔐 {{call .T "settings.security"}}</h2>
+        <form>
+            <div class="form-group">
+                <label for="jwt_secret">{{call .T "settings.jwt_secret"}}</label>
+                <input type="password" id="jwt_secret" placeholder="Current secret is hidden" disabled>
+                <small>JWT secret is configured via environment variables</small>
+            </div>
+        </form>
+    </section>
+    
+    <section class="glass-card card">
+        <h2>📅 {{call .T "settings.sync_schedule"}}</h2>
+        <form>
+            <div class="form-group">
+                <label for="sync_interval">{{call .T "settings.sync_interval"}}</label>
+                <select id="sync_interval">
+                    <option value="5">5 {{call .T "time.minutes" 5}}</option>
+                    <option value="15">15 {{call .T "time.minutes" 15}}</option>
+                    <option value="30">30 {{call .T "time.minutes" 30}}</option>
+                    <option value="60" selected>{{call .T "time.hour"}}</option>
+                    <option value="120">2 {{call .T "time.hours" 2}}</option>
+                    <option value="360">6 {{call .T "time.hours" 6}}</option>
+                    <option value="720">12 {{call .T "time.hours" 12}}</option>
+                    <option value="1440">24 {{call .T "time.hours" 24}}</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">{{call .T "settings.update_schedule"}}</button>
+        </form>
+    </section>
+    
+    <section class="glass-card card">
+        <h2>🗃️ {{call .T "settings.database"}}</h2>
+        <p><strong>{{call .T "common.type"}}:</strong> SQLite</p>
+        <p><strong>{{call .T "common.location"}}:</strong> ./data/syncer.db</p>
+        <p><strong>{{call .T "common.size"}}:</strong> 2.1 MB</p>
+        <div style="margin-top: 1rem;">
+            <button class="btn btn-outline" style="margin-right: 0.5rem;">{{call .T "settings.backup_database"}}</button>
+            <button class="btn btn-danger">{{call .T "settings.reset_database"}}</button>
+        </div>
+    </section>
+    
+    <section class="glass-card card">
+        <h2>📊 {{call .T "settings.system_info"}}</h2>
+        <p><strong>{{call .T "settings.version"}}:</strong> v1.0.0</p>
+        <p><strong>{{call .T "settings.build"}}:</strong> 2025-09-11</p>
+        <p><strong>Go {{call .T "settings.go_version"}}:</strong> go1.21</p>
+        <p><strong>{{call .T "settings.uptime"}}:</strong> 2h 15m</p>
+        <div style="margin-top: 1rem;">
+            <button class="btn btn-outline">{{call .T "settings.download_logs"}}</button>
+        </div>
+    </section>
+</div>

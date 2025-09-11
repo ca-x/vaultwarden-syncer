@@ -1,0 +1,27 @@
+{{if eq (len .Cards) 0}}
+<div class="glass-card card-compact">
+    <p style="text-align: center; color: rgba(255, 255, 255, 0.7);">📂 {{call .T "storage.no_backends"}}</p>
+</div>
+{{else}}
+{{range .Cards}}
+<div class="glass-card card-compact" style="margin-bottom: 1rem;">
+    <h3>{{.Icon}} {{.Name}}</h3>
+    <p><strong>{{call .T "common.type"}}:</strong> {{.Type}}</p>
+    {{if .Config}}
+        {{if eq .Type "webdav"}}
+            <p><strong>{{call .T "storage.webdav.url"}}:</strong> {{.Config.url}}</p>
+        {{else if eq .Type "s3"}}
+            <p><strong>{{call .T "storage.s3.endpoint"}}:</strong> {{if .Config.endpoint}}{{.Config.endpoint}}{{else}}AWS S3{{end}}</p>
+            <p><strong>{{call .T "storage.s3.region"}}:</strong> {{.Config.region}}</p>
+            <p><strong>{{call .T "storage.s3.bucket"}}:</strong> {{.Config.bucket}}</p>
+        {{end}}
+    {{end}}
+    <p><strong>{{call .T "common.status"}}:</strong> <span style="color: {{.StatusColor}};">{{.Status}}</span></p>
+    <p><strong>{{call .T "common.created"}}:</strong> {{.Created}}</p>
+    <div class="storage-actions" style="display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap;">
+        <button hx-post="/api/sync/{{.ID}}" hx-target="#result" class="btn btn-primary" style="flex: 1; min-width: 100px;">🔄 {{call .T "storage.sync_now"}}</button>
+        <button hx-delete="/api/storage/{{.ID}}" hx-target="#result" hx-confirm="{{call .T "storage.delete_confirm"}}" class="btn btn-danger" style="flex: 1; min-width: 100px;">🗑️ {{call .T "common.delete"}}</button>
+    </div>
+</div>
+{{end}}
+{{end}}

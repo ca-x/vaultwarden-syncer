@@ -5,8 +5,9 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"vaultwarden-syncer/ent"
-	"vaultwarden-syncer/internal/service"
+
+	"github.com/ca-x/vaultwarden-syncer/ent"
+	"github.com/ca-x/vaultwarden-syncer/internal/service"
 )
 
 type SetupService struct {
@@ -15,9 +16,9 @@ type SetupService struct {
 }
 
 type SetupData struct {
-	AdminUsername string `json:"admin_username"`
-	AdminPassword string `json:"admin_password"`
-	AdminEmail    string `json:"admin_email,omitempty"`
+	AdminUsername string `form:"admin_username" json:"admin_username"`
+	AdminPassword string `form:"admin_password" json:"admin_password"`
+	AdminEmail    string `form:"admin_email" json:"admin_email,omitempty"`
 }
 
 func NewSetupService(client *ent.Client, userService *service.UserService) *SetupService {

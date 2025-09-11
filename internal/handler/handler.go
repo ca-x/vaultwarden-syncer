@@ -1,9 +1,20 @@
 package handler
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
-	"vaultwarden-syncer/internal/service"
-	"vaultwarden-syncer/internal/setup"
+	"strconv"
+	"time"
+
+	"github.com/ca-x/vaultwarden-syncer/ent"
+	"github.com/ca-x/vaultwarden-syncer/ent/storage"
+	"github.com/ca-x/vaultwarden-syncer/ent/syncjob"
+	"github.com/ca-x/vaultwarden-syncer/internal/i18n"
+	"github.com/ca-x/vaultwarden-syncer/internal/service"
+	"github.com/ca-x/vaultwarden-syncer/internal/setup"
+	"github.com/ca-x/vaultwarden-syncer/internal/sync"
+	"github.com/ca-x/vaultwarden-syncer/internal/template"
 
 	"github.com/labstack/echo/v4"
 )
@@ -11,12 +22,25 @@ import (
 type Handler struct {
 	userService  *service.UserService
 	setupService *setup.SetupService
+	syncService  *sync.Service
+	client       *ent.Client
+	tmplManager  *template.Manager
 }
 
-func New(userService *service.UserService, setupService *setup.SetupService) *Handler {
+func New(userService *service.UserService, setupService *setup.SetupService, syncService *sync.Service, client *ent.Client) *Handler {
+	tmplManager, err := template.New()
+	if err != nil {
+		// Log error but don't fail, fallback to basic responses
+		fmt.Printf("Failed to create template manager: %v\n", err)
+		tmplManager = nil
+	}
+
 	return &Handler{
 		userService:  userService,
 		setupService: setupService,
+		syncService:  syncService,
+		client:       client,
+		tmplManager:  tmplManager,
 	}
 }
 
@@ -27,51 +51,53 @@ func (h *Handler) Health(c echo.Context) error {
 }
 
 func (h *Handler) Index(c echo.Context) error {
-	setupComplete, err := h.setupService.IsSetupComplete(c.Request().Context())
+	// Authentication middleware already checks setup status,
+	// so we can directly show the dashboard
+	if h.tmplManager == nil {
+		return c.String(http.StatusInternalServerError, "Template manager not available")
+	}
+
+	// Get language and translator from context
+	lang := i18n.GetLanguageFromContext(c.Request().Context())
+	translator := i18n.GetTranslatorFromContext(c.Request().Context())
+	if translator == nil {
+		translator = i18n.New()
+	}
+
+	// Get storage count
+	storageCount, err := h.client.Storage.Query().Count(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to check setup status"})
+		storageCount = 0 // fallback on error
 	}
 
-	if !setupComplete {
-		return c.Redirect(http.StatusFound, "/setup")
+	// Get last sync job
+	lastSyncTime := translator.T(lang, "time.never")
+	lastJob, err := h.client.SyncJob.Query().Order(ent.Desc(syncjob.FieldCreatedAt)).First(c.Request().Context())
+	if err == nil {
+		lastSyncTime = lastJob.CreatedAt.Format("2006-01-02 15:04")
 	}
 
-	return c.HTML(http.StatusOK, `
-		<!DOCTYPE html>
-		<html>
-		<head>
-			<title>Vaultwarden Syncer</title>
-			<meta charset="utf-8">
-			<meta name="viewport" content="width=device-width, initial-scale=1">
-			<link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
-			<script src="https://unpkg.com/htmx.org@1.9.10"></script>
-		</head>
-		<body>
-			<main class="container">
-				<nav>
-					<ul>
-						<li><strong>Vaultwarden Syncer</strong></li>
-					</ul>
-					<ul>
-						<li><a href="/logout">Logout</a></li>
-					</ul>
-				</nav>
-				<h1>Dashboard</h1>
-				<div class="grid">
-					<section>
-						<h2>Sync Status</h2>
-						<p>All systems operational</p>
-					</section>
-					<section>
-						<h2>Storage</h2>
-						<p>Configure your storage backends</p>
-						<a href="/storage" role="button">Manage Storage</a>
-					</section>
-				</div>
-			</main>
-		</body>
-		</html>
-	`)
+	// Get sync jobs count
+	jobsCount, err := h.client.SyncJob.Query().Count(c.Request().Context())
+	if err != nil {
+		jobsCount = 0
+	}
+
+	dashboardData := template.DashboardData{
+		StorageCount: storageCount,
+		LastSync:     lastSyncTime,
+		BackupSize:   translator.T(lang, "status.calculating"),
+		TotalBackups: jobsCount,
+		SystemStatus: translator.T(lang, "status.operational"),
+	}
+
+	html, err := h.tmplManager.RenderDashboard(dashboardData, lang, translator)
+	if err != nil {
+		fmt.Printf("Failed to render dashboard: %v\n", err)
+		return c.String(http.StatusInternalServerError, "Failed to render dashboard: "+err.Error())
+	}
+
+	return c.HTML(http.StatusOK, html)
 }
 
 func (h *Handler) Setup(c echo.Context) error {
@@ -84,45 +110,23 @@ func (h *Handler) Setup(c echo.Context) error {
 		return c.Redirect(http.StatusFound, "/")
 	}
 
-	return c.HTML(http.StatusOK, `
-		<!DOCTYPE html>
-		<html>
-		<head>
-			<title>Setup - Vaultwarden Syncer</title>
-			<meta charset="utf-8">
-			<meta name="viewport" content="width=device-width, initial-scale=1">
-			<link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
-			<script src="https://unpkg.com/htmx.org@1.9.10"></script>
-		</head>
-		<body>
-			<main class="container">
-				<h1>Initial Setup</h1>
-				<p>Welcome! Let's set up your Vaultwarden Syncer instance.</p>
-				
-				<form hx-post="/api/setup" hx-target="#result">
-					<div class="grid">
-						<label for="admin_username">Admin Username</label>
-						<input type="text" id="admin_username" name="admin_username" required>
-					</div>
-					
-					<div class="grid">
-						<label for="admin_password">Admin Password</label>
-						<input type="password" id="admin_password" name="admin_password" required minlength="8">
-					</div>
-					
-					<div class="grid">
-						<label for="admin_email">Admin Email (optional)</label>
-						<input type="email" id="admin_email" name="admin_email">
-					</div>
-					
-					<button type="submit">Complete Setup</button>
-				</form>
-				
-				<div id="result"></div>
-			</main>
-		</body>
-		</html>
-	`)
+	if h.tmplManager == nil {
+		return c.String(http.StatusInternalServerError, "Template manager not available")
+	}
+
+	// Get language and translator from context
+	lang := i18n.GetLanguageFromContext(c.Request().Context())
+	translator := i18n.GetTranslatorFromContext(c.Request().Context())
+	if translator == nil {
+		translator = i18n.New()
+	}
+
+	html, err := h.tmplManager.RenderSetup(lang, translator)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to render setup page")
+	}
+
+	return c.HTML(http.StatusOK, html)
 }
 
 func (h *Handler) CompleteSetup(c echo.Context) error {
@@ -144,39 +148,35 @@ func (h *Handler) CompleteSetup(c echo.Context) error {
 }
 
 func (h *Handler) Login(c echo.Context) error {
-	return c.HTML(http.StatusOK, `
-		<!DOCTYPE html>
-		<html>
-		<head>
-			<title>Login - Vaultwarden Syncer</title>
-			<meta charset="utf-8">
-			<meta name="viewport" content="width=device-width, initial-scale=1">
-			<link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
-			<script src="https://unpkg.com/htmx.org@1.9.10"></script>
-		</head>
-		<body>
-			<main class="container">
-				<h1>Login</h1>
-				
-				<form hx-post="/api/login" hx-target="#result">
-					<div class="grid">
-						<label for="username">Username</label>
-						<input type="text" id="username" name="username" required>
-					</div>
-					
-					<div class="grid">
-						<label for="password">Password</label>
-						<input type="password" id="password" name="password" required>
-					</div>
-					
-					<button type="submit">Login</button>
-				</form>
-				
-				<div id="result"></div>
-			</main>
-		</body>
-		</html>
-	`)
+	// Check if setup is complete first
+	setupComplete, err := h.setupService.IsSetupComplete(c.Request().Context())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to check setup status"})
+	}
+
+	// If setup is not complete, redirect to setup page
+	if !setupComplete {
+		return c.Redirect(http.StatusFound, "/setup")
+	}
+
+	if h.tmplManager == nil {
+		return c.String(http.StatusInternalServerError, "Template manager not available")
+	}
+
+	// Get language and translator from context
+	lang := i18n.GetLanguageFromContext(c.Request().Context())
+	translator := i18n.GetTranslatorFromContext(c.Request().Context())
+	if translator == nil {
+		translator = i18n.New()
+	}
+
+	html, err := h.tmplManager.RenderLogin(lang, translator)
+	if err != nil {
+		fmt.Printf("Failed to render login page: %v\n", err)
+		return c.String(http.StatusInternalServerError, "Failed to render login page: "+err.Error())
+	}
+
+	return c.HTML(http.StatusOK, html)
 }
 
 func (h *Handler) HandleLogin(c echo.Context) error {
@@ -202,10 +202,319 @@ func (h *Handler) HandleLogin(c echo.Context) error {
 	}
 	c.SetCookie(cookie)
 
+	// Use HTMX redirect header to navigate to dashboard
+	c.Response().Header().Set("HX-Redirect", "/")
 	return c.HTML(http.StatusOK, `
 		<div style="color: green;">
-			<p>Welcome, `+user.Username+`!</p>
-			<p><a href="/">Go to Dashboard</a></p>
+			<p>Welcome, `+user.Username+`! Redirecting...</p>
 		</div>
 	`)
+}
+
+// Logout handles user logout
+func (h *Handler) Logout(c echo.Context) error {
+	// Clear the auth cookie
+	cookie := &http.Cookie{
+		Name:     "auth_token",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   -1, // Delete the cookie
+	}
+	c.SetCookie(cookie)
+	return c.Redirect(http.StatusFound, "/login")
+}
+
+// StorageList displays the storage management page
+func (h *Handler) StorageList(c echo.Context) error {
+	storages, err := h.client.Storage.Query().All(c.Request().Context())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to load storages"})
+	}
+
+	if h.tmplManager == nil {
+		return c.String(http.StatusInternalServerError, "Template manager not available")
+	}
+
+	// Get language and translator from context
+	lang := i18n.GetLanguageFromContext(c.Request().Context())
+	translator := i18n.GetTranslatorFromContext(c.Request().Context())
+	if translator == nil {
+		translator = i18n.New()
+	}
+
+	html, err := h.tmplManager.RenderStorage(storages, lang, translator)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to render storage page")
+	}
+
+	return c.HTML(http.StatusOK, html)
+}
+
+// Settings displays the settings page
+func (h *Handler) Settings(c echo.Context) error {
+	if h.tmplManager == nil {
+		return c.String(http.StatusInternalServerError, "Template manager not available")
+	}
+
+	// Get language and translator from context
+	lang := i18n.GetLanguageFromContext(c.Request().Context())
+	translator := i18n.GetTranslatorFromContext(c.Request().Context())
+	if translator == nil {
+		translator = i18n.New()
+	}
+
+	html, err := h.tmplManager.RenderSettings(lang, translator)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to render settings page")
+	}
+
+	return c.HTML(http.StatusOK, html)
+}
+
+// CreateStorage creates a new storage backend
+func (h *Handler) CreateStorage(c echo.Context) error {
+	// Parse form data
+	if err := c.Request().ParseForm(); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid form data"})
+	}
+
+	name := c.FormValue("name")
+	storageType := c.FormValue("type")
+	enabled := c.FormValue("enabled") == "on"
+	configJSON := c.FormValue("config")
+
+	// Validate required fields
+	if name == "" || storageType == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Name and type are required"})
+	}
+
+	// Parse config JSON
+	var config map[string]interface{}
+	if configJSON != "" {
+		if err := json.Unmarshal([]byte(configJSON), &config); err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid config JSON"})
+		}
+	} else {
+		// If no config JSON provided, build config from form fields
+		config = make(map[string]interface{})
+
+		if storageType == "webdav" {
+			config["url"] = c.FormValue("webdav_url")
+			config["username"] = c.FormValue("webdav_username")
+			config["password"] = c.FormValue("webdav_password")
+
+			// Validate WebDAV required fields
+			if config["url"] == "" || config["username"] == "" || config["password"] == "" {
+				return c.JSON(http.StatusBadRequest, map[string]string{"error": "WebDAV requires URL, username, and password"})
+			}
+		} else if storageType == "s3" {
+			config["endpoint"] = c.FormValue("s3_endpoint")
+			config["access_key_id"] = c.FormValue("s3_access_key_id")
+			config["secret_access_key"] = c.FormValue("s3_secret_access_key")
+			config["region"] = c.FormValue("s3_region")
+			config["bucket"] = c.FormValue("s3_bucket")
+
+			// Validate S3 required fields (endpoint is optional)
+			if config["access_key_id"] == "" || config["secret_access_key"] == "" ||
+				config["region"] == "" || config["bucket"] == "" {
+				return c.JSON(http.StatusBadRequest, map[string]string{"error": "S3 requires access key ID, secret access key, region, and bucket"})
+			}
+		}
+	}
+
+	_, err := h.client.Storage.
+		Create().
+		SetName(name).
+		SetType(storage.Type(storageType)).
+		SetConfig(config).
+		SetEnabled(enabled).
+		Save(c.Request().Context())
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create storage: " + err.Error()})
+	}
+
+	// Reload storage list to show the new storage
+	storages, err := h.client.Storage.Query().All(c.Request().Context())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to load storages"})
+	}
+
+	// Get language and translator from context
+	lang := i18n.GetLanguageFromContext(c.Request().Context())
+	translator := i18n.GetTranslatorFromContext(c.Request().Context())
+	if translator == nil {
+		translator = i18n.New()
+	}
+
+	// Render updated storage cards
+	if h.tmplManager != nil {
+		storageCards, err := h.tmplManager.RenderStorageCards(storages, lang, translator)
+		if err == nil {
+			return c.HTML(http.StatusOK, fmt.Sprintf(`
+				<div style="color: green;">Storage created successfully!</div>
+				<script>
+					// Reset form
+					document.getElementById('storage-form').reset();
+					// Hide storage type fields
+					document.querySelectorAll('.storage-type-fields').forEach(function(el) {
+						el.style.display = 'none';
+					});
+					// Update storage list
+					document.getElementById('storage-list').innerHTML = %q;
+				</script>
+			`, storageCards))
+		}
+	}
+
+	return c.HTML(http.StatusOK, `<div style="color: green;">Storage created successfully!</div>`)
+}
+
+// UpdateStorage updates an existing storage backend
+func (h *Handler) UpdateStorage(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid storage ID"})
+	}
+
+	// Parse form data
+	if err := c.Request().ParseForm(); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid form data"})
+	}
+
+	name := c.FormValue("name")
+	storageType := c.FormValue("type")
+	enabled := c.FormValue("enabled") == "on"
+	configJSON := c.FormValue("config")
+
+	// Validate required fields
+	if name == "" || storageType == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Name and type are required"})
+	}
+
+	// Parse config JSON
+	var config map[string]interface{}
+	if configJSON != "" {
+		if err := json.Unmarshal([]byte(configJSON), &config); err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid config JSON"})
+		}
+	} else {
+		// If no config JSON provided, build config from form fields
+		config = make(map[string]interface{})
+
+		if storageType == "webdav" {
+			config["url"] = c.FormValue("webdav_url")
+			config["username"] = c.FormValue("webdav_username")
+			config["password"] = c.FormValue("webdav_password")
+
+			// Validate WebDAV required fields
+			if config["url"] == "" || config["username"] == "" || config["password"] == "" {
+				return c.JSON(http.StatusBadRequest, map[string]string{"error": "WebDAV requires URL, username, and password"})
+			}
+		} else if storageType == "s3" {
+			config["endpoint"] = c.FormValue("s3_endpoint")
+			config["access_key_id"] = c.FormValue("s3_access_key_id")
+			config["secret_access_key"] = c.FormValue("s3_secret_access_key")
+			config["region"] = c.FormValue("s3_region")
+			config["bucket"] = c.FormValue("s3_bucket")
+
+			// Validate S3 required fields (endpoint is optional)
+			if config["access_key_id"] == "" || config["secret_access_key"] == "" ||
+				config["region"] == "" || config["bucket"] == "" {
+				return c.JSON(http.StatusBadRequest, map[string]string{"error": "S3 requires access key ID, secret access key, region, and bucket"})
+			}
+		}
+	}
+
+	_, err = h.client.Storage.
+		UpdateOneID(id).
+		SetName(name).
+		SetType(storage.Type(storageType)).
+		SetConfig(config).
+		SetEnabled(enabled).
+		SetUpdatedAt(time.Now()).
+		Save(c.Request().Context())
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to update storage: " + err.Error()})
+	}
+
+	// Reload storage list to show the updated storage
+	storages, err := h.client.Storage.Query().All(c.Request().Context())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to load storages"})
+	}
+
+	// Get language and translator from context
+	lang := i18n.GetLanguageFromContext(c.Request().Context())
+	translator := i18n.GetTranslatorFromContext(c.Request().Context())
+	if translator == nil {
+		translator = i18n.New()
+	}
+
+	// Render updated storage cards
+	if h.tmplManager != nil {
+		storageCards, err := h.tmplManager.RenderStorageCards(storages, lang, translator)
+		if err == nil {
+			return c.HTML(http.StatusOK, fmt.Sprintf(`
+				<div style="color: green;">Storage updated successfully!</div>
+				<script>
+					// Update storage list
+					document.getElementById('storage-list').innerHTML = %q;
+				</script>
+			`, storageCards))
+		}
+	}
+
+	return c.HTML(http.StatusOK, `<div style="color: green;">Storage updated successfully!</div>`)
+}
+
+// DeleteStorage deletes a storage backend
+func (h *Handler) DeleteStorage(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid storage ID"})
+	}
+
+	err = h.client.Storage.DeleteOneID(id).Exec(c.Request().Context())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to delete storage"})
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "Storage deleted successfully"})
+}
+
+// TriggerSync manually triggers a sync for a specific storage
+func (h *Handler) TriggerSync(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid storage ID"})
+	}
+
+	go func() {
+		if err := h.syncService.SyncToStorage(c.Request().Context(), id); err != nil {
+			// Log error but don't block the response
+		}
+	}()
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "Sync triggered successfully"})
+}
+
+// GetSyncJobs returns the list of sync jobs
+func (h *Handler) GetSyncJobs(c echo.Context) error {
+	jobs, err := h.client.SyncJob.
+		Query().
+		WithStorage().
+		Order(ent.Desc(syncjob.FieldCreatedAt)).
+		Limit(50).
+		All(c.Request().Context())
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to load sync jobs"})
+	}
+
+	return c.JSON(http.StatusOK, jobs)
 }

@@ -1,33 +1,69 @@
 version: '3.8'
 
 services:
+  vaultwarden-syncer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vaultwarden-syncer
+    restart: unless-stopped
+    ports:
+      - "8181:8181"
+    volumes:
+      # Configuration file (copy from config.yaml.example and customize)
+      - ./config.yaml:/app/config.yaml:ro
+      # Application data directory
+      - ./data:/app/data
+      # Logs directory
+      - ./logs:/app/logs
+      # Vaultwarden data directory (mount from your vaultwarden instance)
+      - /path/to/vaultwarden/data:/app/data/vaultwarden:ro
+    environment:
+      - TZ=UTC
+    networks:
+      - vaultwarden-syncer
+    depends_on:
+      - vaultwarden
+    labels:
+      - "com.docker.compose.project=vaultwarden-syncer"
+
+  # Optional: Include vaultwarden service if not running separately
   vaultwarden:
     image: vaultwarden/server:latest
     container_name: vaultwarden
     restart: unless-stopped
-    environment:
-      WEBSOCKET_ENABLED: "true"
-    volumes:
-      - ./vaultwarden-data:/data
     ports:
       - "8080:80"
-      - "3012:3012"
+    volumes:
+      - vw-data:/data/
+    environment:
+      - WEBSOCKET_ENABLED=true
+      - SIGNUPS_ALLOWED=false
+      - ADMIN_TOKEN=your-admin-token-here
+    networks:
+      - vaultwarden-syncer
 
-  vaultwarden-syncer:
-    build: .
-    container_name: vaultwarden-syncer
+  # Optional: Add a reverse proxy like Traefik or nginx
+  nginx:
+    image: nginx:alpine
+    container_name: vaultwarden-proxy
     restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    networks:
+      - vaultwarden-syncer
     depends_on:
       - vaultwarden
-    volumes:
-      - ./syncer-data:/app/data
-      - ./vaultwarden-data:/vaultwarden-data:ro
-      - ./config.yaml:/app/config.yaml:ro
-    ports:
-      - "8181:8181"
-    environment:
-      - VAULTWARDEN_DATA_PATH=/vaultwarden-data
+      - vaultwarden-syncer
+
+networks:
+  vaultwarden-syncer:
+    driver: bridge
 
 volumes:
-  vaultwarden-data:
-  syncer-data:
+  vw-data:
+    driver: local

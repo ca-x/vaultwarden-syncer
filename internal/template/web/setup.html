@@ -1,0 +1,24 @@
+<h1>🔧 {{call .T "setup.title"}}</h1>
+<p>{{call .T "setup.subtitle"}}</p>
+
+<form hx-post="/api/setup" hx-target="#result">
+    <div class="form-group">
+        <label for="admin_username">{{call .T "setup.admin_username"}}</label>
+        <input type="text" id="admin_username" name="admin_username" placeholder="{{call .T "setup.admin_username"}}" required>
+    </div>
+    
+    <div class="form-group">
+        <label for="admin_password">{{call .T "setup.admin_password"}}</label>
+        <input type="password" id="admin_password" name="admin_password" placeholder="{{call .T "setup.admin_password"}}" required minlength="8">
+        <small>{{call .T "setup.password_hint"}}</small>
+    </div>
+    
+    <div class="form-group">
+        <label for="admin_email">{{call .T "setup.admin_email"}}</label>
+        <input type="email" id="admin_email" name="admin_email" placeholder="{{call .T "setup.email_placeholder"}}">
+    </div>
+    
+    <button type="submit" class="btn btn-success btn-full">{{call .T "setup.button"}}</button>
+</form>
+
+<div id="result" class="result"></div>

@@ -2,13 +2,12 @@ package database
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
-	"vaultwarden-syncer/internal/config"
-	"vaultwarden-syncer/ent"
 
-	_ "github.com/mattn/go-sqlite3"
-	"entgo.io/ent/dialect"
+	"github.com/ca-x/vaultwarden-syncer/ent"
+	"github.com/ca-x/vaultwarden-syncer/internal/config"
+
+	_ "github.com/lib-x/entsqlite"
 )
 
 func New(cfg *config.Config) (*ent.Client, error) {
@@ -17,7 +16,20 @@ func New(cfg *config.Config) (*ent.Client, error) {
 
 	switch cfg.Database.Driver {
 	case "sqlite3":
-		client, err = ent.Open(dialect.SQLite, cfg.Database.DSN)
+		// 确保数据库文件路径目录存在
+		dsn := cfg.Database.DSN
+		if dsn == "" {
+			dsn = "./data/syncer.db"
+		}
+
+		// 使用 entsqlite 驱动名称
+		driverName := "sqlite3"
+
+		// 构建完整的DSN，根据SQLite连接参数优化记忆
+		// 使用正确的file:前缀格式
+		fullDSN := fmt.Sprintf("file:%s?cache=shared&_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=busy_timeout(10000)", dsn)
+
+		client, err = ent.Open(driverName, fullDSN)
 	default:
 		return nil, fmt.Errorf("unsupported database driver: %s", cfg.Database.Driver)
 	}

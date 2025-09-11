@@ -4,10 +4,10 @@ import (
 	"context"
 	"log"
 	"time"
-	"vaultwarden-syncer/ent"
-	"vaultwarden-syncer/ent/storage"
-	"vaultwarden-syncer/internal/config"
-	"vaultwarden-syncer/internal/sync"
+	"github.com/ca-x/vaultwarden-syncer/ent"
+	"github.com/ca-x/vaultwarden-syncer/ent/storage"
+	"github.com/ca-x/vaultwarden-syncer/internal/config"
+	"github.com/ca-x/vaultwarden-syncer/internal/sync"
 )
 
 type Service struct {

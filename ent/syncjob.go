@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/ca-x/vaultwarden-syncer/ent/storage"
 	"github.com/ca-x/vaultwarden-syncer/ent/syncjob"
 )
 
@@ -24,12 +25,36 @@ type SyncJob struct {
 	// Message holds the value of the "message" field.
 	Message string `json:"message,omitempty"`
 	// StartedAt holds the value of the "started_at" field.
-	StartedAt *time.Time `json:"started_at,omitempty"`
+	StartedAt time.Time `json:"started_at,omitempty"`
 	// CompletedAt holds the value of the "completed_at" field.
-	CompletedAt *time.Time `json:"completed_at,omitempty"`
+	CompletedAt time.Time `json:"completed_at,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
-	CreatedAt    time.Time `json:"created_at,omitempty"`
-	selectValues sql.SelectValues
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the SyncJobQuery when eager-loading is set.
+	Edges             SyncJobEdges `json:"edges"`
+	storage_sync_jobs *int
+	selectValues      sql.SelectValues
+}
+
+// SyncJobEdges holds the relations/edges for other nodes in the graph.
+type SyncJobEdges struct {
+	// Storage holds the value of the storage edge.
+	Storage *Storage `json:"storage,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+}
+
+// StorageOrErr returns the Storage value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e SyncJobEdges) StorageOrErr() (*Storage, error) {
+	if e.Storage != nil {
+		return e.Storage, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: storage.Label}
+	}
+	return nil, &NotLoadedError{edge: "storage"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -43,6 +68,8 @@ func (*SyncJob) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case syncjob.FieldStartedAt, syncjob.FieldCompletedAt, syncjob.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
+		case syncjob.ForeignKeys[0]: // storage_sync_jobs
+			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -52,7 +79,7 @@ func (*SyncJob) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the SyncJob fields.
-func (sj *SyncJob) assignValues(columns []string, values []any) error {
+func (_m *SyncJob) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -63,47 +90,52 @@ func (sj *SyncJob) assignValues(columns []string, values []any) error {
 			if !ok {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
-			sj.ID = int(value.Int64)
+			_m.ID = int(value.Int64)
 		case syncjob.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
-				sj.Status = syncjob.Status(value.String)
+				_m.Status = syncjob.Status(value.String)
 			}
 		case syncjob.FieldOperation:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field operation", values[i])
 			} else if value.Valid {
-				sj.Operation = syncjob.Operation(value.String)
+				_m.Operation = syncjob.Operation(value.String)
 			}
 		case syncjob.FieldMessage:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field message", values[i])
 			} else if value.Valid {
-				sj.Message = value.String
+				_m.Message = value.String
 			}
 		case syncjob.FieldStartedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field started_at", values[i])
 			} else if value.Valid {
-				sj.StartedAt = new(time.Time)
-				*sj.StartedAt = value.Time
+				_m.StartedAt = value.Time
 			}
 		case syncjob.FieldCompletedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field completed_at", values[i])
 			} else if value.Valid {
-				sj.CompletedAt = new(time.Time)
-				*sj.CompletedAt = value.Time
+				_m.CompletedAt = value.Time
 			}
 		case syncjob.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				sj.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
+			}
+		case syncjob.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field storage_sync_jobs", value)
+			} else if value.Valid {
+				_m.storage_sync_jobs = new(int)
+				*_m.storage_sync_jobs = int(value.Int64)
 			}
 		default:
-			sj.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -111,42 +143,58 @@ func (sj *SyncJob) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the SyncJob.
 // This includes values selected through modifiers, order, etc.
-func (sj *SyncJob) Value(name string) (ent.Value, error) {
-	return sj.selectValues.Get(name)
+func (_m *SyncJob) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
+}
+
+// QueryStorage queries the "storage" edge of the SyncJob entity.
+func (_m *SyncJob) QueryStorage() *StorageQuery {
+	return NewSyncJobClient(_m.config).QueryStorage(_m)
+}
+
+// Update returns a builder for updating this SyncJob.
+// Note that you need to call SyncJob.Unwrap() before calling this method if this SyncJob
+// was returned from a transaction, and the transaction was committed or rolled back.
+func (_m *SyncJob) Update() *SyncJobUpdateOne {
+	return NewSyncJobClient(_m.config).UpdateOne(_m)
+}
+
+// Unwrap unwraps the SyncJob entity that was returned from a transaction after it was closed,
+// so that all future queries will be executed through the driver which created the transaction.
+func (_m *SyncJob) Unwrap() *SyncJob {
+	_tx, ok := _m.config.driver.(*txDriver)
+	if !ok {
+		panic("ent: SyncJob is not a transactional entity")
+	}
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (sj *SyncJob) String() string {
+func (_m *SyncJob) String() string {
 	var builder strings.Builder
 	builder.WriteString("SyncJob(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", sj.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("status=")
-	builder.WriteString(fmt.Sprintf("%v", sj.Status))
+	builder.WriteString(fmt.Sprintf("%v", _m.Status))
 	builder.WriteString(", ")
 	builder.WriteString("operation=")
-	builder.WriteString(fmt.Sprintf("%v", sj.Operation))
+	builder.WriteString(fmt.Sprintf("%v", _m.Operation))
 	builder.WriteString(", ")
 	builder.WriteString("message=")
-	builder.WriteString(sj.Message)
+	builder.WriteString(_m.Message)
 	builder.WriteString(", ")
-	if v := sj.StartedAt; v != nil {
-		builder.WriteString("started_at=")
-		builder.WriteString(v.Format(time.ANSIC))
-	}
+	builder.WriteString("started_at=")
+	builder.WriteString(_m.StartedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
-	if v := sj.CompletedAt; v != nil {
-		builder.WriteString("completed_at=")
-		builder.WriteString(v.Format(time.ANSIC))
-	}
+	builder.WriteString("completed_at=")
+	builder.WriteString(_m.CompletedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
-	builder.WriteString(sj.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }
 
 // SyncJobs is a parsable slice of SyncJob.
 type SyncJobs []*SyncJob
-
-// IsValue implements the driver Valuer interface.
-func (sj *SyncJob) IsValue() {}

@@ -5,8 +5,9 @@ package syncjob
 import (
 	"fmt"
 	"time"
-	
+
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 const (
@@ -26,8 +27,17 @@ const (
 	FieldCompletedAt = "completed_at"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
+	// EdgeStorage holds the string denoting the storage edge name in mutations.
+	EdgeStorage = "storage"
 	// Table holds the table name of the syncjob in the database.
 	Table = "sync_jobs"
+	// StorageTable is the table that holds the storage relation/edge.
+	StorageTable = "sync_jobs"
+	// StorageInverseTable is the table name for the Storage entity.
+	// It exists in this package in order to avoid circular dependency with the "storage" package.
+	StorageInverseTable = "storages"
+	// StorageColumn is the table column denoting the storage relation/edge.
+	StorageColumn = "storage_sync_jobs"
 )
 
 // Columns holds all SQL columns for syncjob fields.
@@ -41,6 +51,12 @@ var Columns = []string{
 	FieldCreatedAt,
 }
 
+// ForeignKeys holds the SQL foreign-keys that are owned by the "sync_jobs"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"storage_sync_jobs",
+}
+
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
@@ -48,8 +64,18 @@ func ValidColumn(column string) bool {
 			return true
 		}
 	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
+			return true
+		}
+	}
 	return false
 }
+
+var (
+	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
+	DefaultCreatedAt func() time.Time
+)
 
 // Status defines the type for the "status" enum field.
 type Status string
@@ -99,11 +125,6 @@ func OperationValidator(o Operation) error {
 	}
 }
 
-var (
-	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
-	DefaultCreatedAt func() time.Time
-)
-
 // OrderOption defines the ordering options for the SyncJob queries.
 type OrderOption func(*sql.Selector)
 
@@ -140,4 +161,18 @@ func ByCompletedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByCreatedAt orders the results by the created_at field.
 func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
+}
+
+// ByStorageField orders the results by storage field.
+func ByStorageField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newStorageStep(), sql.OrderByField(field, opts...))
+	}
+}
+func newStorageStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(StorageInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, StorageTable, StorageColumn),
+	)
 }

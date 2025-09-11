@@ -1,0 +1,29 @@
+<header>
+    <h1>📊 {{call .T "dashboard.title"}}</h1>
+</header>
+
+<div class="grid grid-2">
+    <section class="glass-card card">
+        <h2>🔄 {{call .T "dashboard.sync_status"}}</h2>
+        <p>{{call .T "status.operational"}}</p>
+        <small>{{call .T "dashboard.last_sync" .LastSync}}</small>
+    </section>
+    
+    <section class="glass-card card">
+        <h2>💾 {{call .T "dashboard.storage"}}</h2>
+        <p>{{call .T "dashboard.storage_count" .StorageCount}}</p>
+        <a href="/storage" class="btn btn-primary">{{call .T "dashboard.manage_storage"}}</a>
+    </section>
+    
+    <section class="glass-card card">
+        <h2>📊 {{call .T "dashboard.statistics"}}</h2>
+        <p>{{call .T "dashboard.backup_size" .BackupSize}}</p>
+        <small>{{call .T "dashboard.total_backups" .TotalBackups}}</small>
+    </section>
+    
+    <section class="glass-card card">
+        <h2>⚙️ {{call .T "dashboard.settings"}}</h2>
+        <p>{{call .T "dashboard.system_config"}}</p>
+        <a href="/settings" class="btn btn-outline">{{call .T "dashboard.configure"}}</a>
+    </section>
+</div>

@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 	"fmt"
-	"vaultwarden-syncer/ent"
-	"vaultwarden-syncer/ent/user"
-	"vaultwarden-syncer/internal/auth"
+	"github.com/ca-x/vaultwarden-syncer/ent"
+	"github.com/ca-x/vaultwarden-syncer/ent/user"
+	"github.com/ca-x/vaultwarden-syncer/internal/auth"
 )
 
 type UserService struct {

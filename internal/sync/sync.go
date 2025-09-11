@@ -2,14 +2,14 @@ package sync
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
-	"vaultwarden-syncer/ent"
-	"vaultwarden-syncer/ent/storage"
-	"vaultwarden-syncer/ent/syncjob"
-	"vaultwarden-syncer/internal/backup"
-	storageProvider "vaultwarden-syncer/internal/storage"
+	"github.com/ca-x/vaultwarden-syncer/ent"
+	"github.com/ca-x/vaultwarden-syncer/ent/syncjob"
+	"github.com/ca-x/vaultwarden-syncer/internal/backup"
+	storageProvider "github.com/ca-x/vaultwarden-syncer/internal/storage"
 )
 
 type Service struct {
@@ -144,14 +144,14 @@ func (s *Service) updateJobStatus(ctx context.Context, jobID int, status syncjob
 
 func (s *Service) createStorageProvider(storage *ent.Storage) (storageProvider.Provider, error) {
 	switch storage.Type {
-	case storage.TypeWebdav:
+	case "webdav":
 		var config storageProvider.WebDAVConfig
 		if err := mapConfig(storage.Config, &config); err != nil {
 			return nil, fmt.Errorf("failed to parse WebDAV config: %w", err)
 		}
 		return storageProvider.NewWebDAVProvider(config)
 	
-	case storage.TypeS3:
+	case "s3":
 		var config storageProvider.S3Config
 		if err := mapConfig(storage.Config, &config); err != nil {
 			return nil, fmt.Errorf("failed to parse S3 config: %w", err)
@@ -164,5 +164,15 @@ func (s *Service) createStorageProvider(storage *ent.Storage) (storageProvider.P
 }
 
 func mapConfig(source map[string]interface{}, dest interface{}) error {
+	// Convert map to JSON and then unmarshal to the destination struct
+	jsonData, err := json.Marshal(source)
+	if err != nil {
+		return fmt.Errorf("failed to marshal config: %w", err)
+	}
+	
+	if err := json.Unmarshal(jsonData, dest); err != nil {
+		return fmt.Errorf("failed to unmarshal config: %w", err)
+	}
+	
 	return nil
 }

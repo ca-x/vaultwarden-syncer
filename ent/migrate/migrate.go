@@ -5,73 +5,34 @@ package migrate
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql/schema"
-	"entgo.io/ent/schema/field"
 )
 
 var (
-	// UsersColumns holds the columns for the "users" table.
-	UsersColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "username", Type: field.TypeString, Unique: true},
-		{Name: "password", Type: field.TypeString},
-		{Name: "email", Type: field.TypeString, Nullable: true},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "is_admin", Type: field.TypeBool, Default: false},
-	}
-	// UsersTable holds the schema information for the "users" table.
-	UsersTable = &schema.Table{
-		Name:       "users",
-		Columns:    UsersColumns,
-		PrimaryKey: []*schema.Column{UsersColumns[0]},
-	}
-	
-	// StoragesColumns holds the columns for the "storages" table.
-	StoragesColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "name", Type: field.TypeString, Unique: true},
-		{Name: "type", Type: field.TypeEnum, Enums: []string{"webdav", "s3"}},
-		{Name: "config", Type: field.TypeJSON},
-		{Name: "enabled", Type: field.TypeBool, Default: true},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
-	}
-	// StoragesTable holds the schema information for the "storages" table.
-	StoragesTable = &schema.Table{
-		Name:       "storages",
-		Columns:    StoragesColumns,
-		PrimaryKey: []*schema.Column{StoragesColumns[0]},
-	}
-	
-	// SyncJobsColumns holds the columns for the "sync_jobs" table.
-	SyncJobsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "running", "completed", "failed"}},
-		{Name: "operation", Type: field.TypeEnum, Enums: []string{"backup", "restore"}},
-		{Name: "message", Type: field.TypeText, Nullable: true},
-		{Name: "started_at", Type: field.TypeTime, Nullable: true},
-		{Name: "completed_at", Type: field.TypeTime, Nullable: true},
-		{Name: "created_at", Type: field.TypeTime},
-	}
-	// SyncJobsTable holds the schema information for the "sync_jobs" table.
-	SyncJobsTable = &schema.Table{
-		Name:       "sync_jobs",
-		Columns:    SyncJobsColumns,
-		PrimaryKey: []*schema.Column{SyncJobsColumns[0]},
-	}
-	
-	// Tables holds all the tables in the schema.
-	Tables = []*schema.Table{
-		UsersTable,
-		StoragesTable,
-		SyncJobsTable,
-	}
+	// WithGlobalUniqueID sets the universal ids options to the migration.
+	// If this option is enabled, ent migration will allocate a 1<<32 range
+	// for the ids of each entity (table).
+	// Note that this option cannot be applied on tables that already exist.
+	WithGlobalUniqueID = schema.WithGlobalUniqueID
+	// WithDropColumn sets the drop column option to the migration.
+	// If this option is enabled, ent migration will drop old columns
+	// that were used for both fields and edges. This defaults to false.
+	WithDropColumn = schema.WithDropColumn
+	// WithDropIndex sets the drop index option to the migration.
+	// If this option is enabled, ent migration will drop old indexes
+	// that were defined in the schema. This defaults to false.
+	// Note that unique constraints are defined using `UNIQUE INDEX`,
+	// and therefore, it's recommended to enable this option to get more
+	// flexibility in the schema changes.
+	WithDropIndex = schema.WithDropIndex
+	// WithForeignKeys enables creating foreign-key in schema DDL. This defaults to true.
+	WithForeignKeys = schema.WithForeignKeys
 )
 
-// Schema is the schema type for the database.
+// Schema is the API for creating, migrating and dropping a schema.
 type Schema struct {
 	drv dialect.Driver
 }
@@ -79,24 +40,25 @@ type Schema struct {
 // NewSchema creates a new schema client.
 func NewSchema(drv dialect.Driver) *Schema { return &Schema{drv: drv} }
 
-// Create creates all table resources using the schema package.
+// Create creates all schema resources.
 func (s *Schema) Create(ctx context.Context, opts ...schema.MigrateOption) error {
+	return Create(ctx, s, Tables, opts...)
+}
+
+// Create creates all table resources using the given schema driver.
+func Create(ctx context.Context, s *Schema, tables []*schema.Table, opts ...schema.MigrateOption) error {
 	migrate, err := schema.NewMigrate(s.drv, opts...)
 	if err != nil {
 		return fmt.Errorf("ent/migrate: %w", err)
 	}
-	return migrate.Create(ctx, Tables...)
+	return migrate.Create(ctx, tables...)
 }
 
-// WriteTo writes the schema changes to w instead of the database.
-func (s *Schema) WriteTo(ctx context.Context, w dialect.Writer, opts ...schema.MigrateOption) error {
-	drv := &schema.WriteDriver{
-		Writer: w,
-		Driver: s.drv,
-	}
-	migrate, err := schema.NewMigrate(drv, opts...)
-	if err != nil {
-		return fmt.Errorf("ent/migrate: %w", err)
-	}
-	return migrate.Create(ctx, Tables...)
+// WriteTo writes the schema changes to w instead of running them against the database.
+//
+//	if err := client.Schema.WriteTo(context.Background(), os.Stdout); err != nil {
+//		log.Fatal(err)
+//	}
+func (s *Schema) WriteTo(ctx context.Context, w io.Writer, opts ...schema.MigrateOption) error {
+	return Create(ctx, &Schema{drv: &schema.WriteDriver{Writer: w, Driver: s.drv}}, Tables, opts...)
 }

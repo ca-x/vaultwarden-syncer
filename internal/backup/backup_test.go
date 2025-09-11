@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestCreateBackupWithoutPassword(t *testing.T) {
@@ -59,7 +58,7 @@ func TestCreateBackupWithPassword(t *testing.T) {
 	service := NewService(BackupOptions{
 		VaultwardenDataPath: tempDir,
 		CompressionLevel:    6,
-		Password:           "testpassword",
+		Password:            "testpassword",
 	})
 
 	ctx := context.Background()

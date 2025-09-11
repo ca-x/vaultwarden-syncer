@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -28,8 +29,29 @@ type Storage struct {
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
-	UpdatedAt    time.Time `json:"updated_at,omitempty"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the StorageQuery when eager-loading is set.
+	Edges        StorageEdges `json:"edges"`
 	selectValues sql.SelectValues
+}
+
+// StorageEdges holds the relations/edges for other nodes in the graph.
+type StorageEdges struct {
+	// SyncJobs holds the value of the sync_jobs edge.
+	SyncJobs []*SyncJob `json:"sync_jobs,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+}
+
+// SyncJobsOrErr returns the SyncJobs value or an error if the edge
+// was not loaded in eager-loading.
+func (e StorageEdges) SyncJobsOrErr() ([]*SyncJob, error) {
+	if e.loadedTypes[0] {
+		return e.SyncJobs, nil
+	}
+	return nil, &NotLoadedError{edge: "sync_jobs"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -40,7 +62,7 @@ func (*Storage) scanValues(columns []string) ([]any, error) {
 		case storage.FieldConfig:
 			values[i] = new([]byte)
 		case storage.FieldEnabled:
-			values[i] = new(bool)
+			values[i] = new(sql.NullBool)
 		case storage.FieldID:
 			values[i] = new(sql.NullInt64)
 		case storage.FieldName, storage.FieldType:
@@ -56,7 +78,7 @@ func (*Storage) scanValues(columns []string) ([]any, error) {
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
 // to the Storage fields.
-func (s *Storage) assignValues(columns []string, values []any) error {
+func (_m *Storage) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
@@ -67,47 +89,47 @@ func (s *Storage) assignValues(columns []string, values []any) error {
 			if !ok {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
-			s.ID = int(value.Int64)
+			_m.ID = int(value.Int64)
 		case storage.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
-				s.Name = value.String
+				_m.Name = value.String
 			}
 		case storage.FieldType:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field type", values[i])
 			} else if value.Valid {
-				s.Type = storage.Type(value.String)
+				_m.Type = storage.Type(value.String)
 			}
 		case storage.FieldConfig:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field config", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := sql.JSONUnmarshal(*value, &s.Config); err != nil {
+				if err := json.Unmarshal(*value, &_m.Config); err != nil {
 					return fmt.Errorf("unmarshal field config: %w", err)
 				}
 			}
 		case storage.FieldEnabled:
-			if value, ok := values[i].(*bool); !ok {
+			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field enabled", values[i])
-			} else if value != nil {
-				s.Enabled = *value
+			} else if value.Valid {
+				_m.Enabled = value.Bool
 			}
 		case storage.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				s.CreatedAt = value.Time
+				_m.CreatedAt = value.Time
 			}
 		case storage.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				s.UpdatedAt = value.Time
+				_m.UpdatedAt = value.Time
 			}
 		default:
-			s.selectValues.Set(columns[i], values[i])
+			_m.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
@@ -115,38 +137,58 @@ func (s *Storage) assignValues(columns []string, values []any) error {
 
 // Value returns the ent.Value that was dynamically selected and assigned to the Storage.
 // This includes values selected through modifiers, order, etc.
-func (s *Storage) Value(name string) (ent.Value, error) {
-	return s.selectValues.Get(name)
+func (_m *Storage) Value(name string) (ent.Value, error) {
+	return _m.selectValues.Get(name)
+}
+
+// QuerySyncJobs queries the "sync_jobs" edge of the Storage entity.
+func (_m *Storage) QuerySyncJobs() *SyncJobQuery {
+	return NewStorageClient(_m.config).QuerySyncJobs(_m)
+}
+
+// Update returns a builder for updating this Storage.
+// Note that you need to call Storage.Unwrap() before calling this method if this Storage
+// was returned from a transaction, and the transaction was committed or rolled back.
+func (_m *Storage) Update() *StorageUpdateOne {
+	return NewStorageClient(_m.config).UpdateOne(_m)
+}
+
+// Unwrap unwraps the Storage entity that was returned from a transaction after it was closed,
+// so that all future queries will be executed through the driver which created the transaction.
+func (_m *Storage) Unwrap() *Storage {
+	_tx, ok := _m.config.driver.(*txDriver)
+	if !ok {
+		panic("ent: Storage is not a transactional entity")
+	}
+	_m.config.driver = _tx.drv
+	return _m
 }
 
 // String implements the fmt.Stringer.
-func (s *Storage) String() string {
+func (_m *Storage) String() string {
 	var builder strings.Builder
 	builder.WriteString("Storage(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", s.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("name=")
-	builder.WriteString(s.Name)
+	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
 	builder.WriteString("type=")
-	builder.WriteString(fmt.Sprintf("%v", s.Type))
+	builder.WriteString(fmt.Sprintf("%v", _m.Type))
 	builder.WriteString(", ")
 	builder.WriteString("config=")
-	builder.WriteString(fmt.Sprintf("%v", s.Config))
+	builder.WriteString(fmt.Sprintf("%v", _m.Config))
 	builder.WriteString(", ")
 	builder.WriteString("enabled=")
-	builder.WriteString(fmt.Sprintf("%v", s.Enabled))
+	builder.WriteString(fmt.Sprintf("%v", _m.Enabled))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
-	builder.WriteString(s.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
-	builder.WriteString(s.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }
 
 // Storages is a parsable slice of Storage.
 type Storages []*Storage
-
-// IsValue implements the driver Valuer interface.
-func (s *Storage) IsValue() {}
