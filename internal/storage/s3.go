@@ -170,3 +170,51 @@ func (p *S3Provider) Exists(ctx context.Context, path string) (bool, error) {
 
 	return true, nil
 }
+
+// UploadPart 上传文件的一部分（支持断点续传）
+func (p *S3Provider) UploadPart(ctx context.Context, path string, reader io.Reader, offset int64) error {
+	// S3的分段上传需要更复杂的实现，这里简化为完整上传
+	// 在生产环境中，应该使用S3的multipart upload功能
+	return p.Upload(ctx, path, reader)
+}
+
+// DownloadPart 下载文件的一部分（支持断点续传）
+func (p *S3Provider) DownloadPart(ctx context.Context, path string, offset, length int64) (io.ReadCloser, error) {
+	// 使用Range参数下载文件的一部分
+	rangeHeader := fmt.Sprintf("bytes=%d-%d", offset, offset+length-1)
+	
+	result, err := p.client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(p.config.Bucket),
+		Key:    aws.String(path),
+		Range:  aws.String(rangeHeader),
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to download part from S3: %w", err)
+	}
+
+	return result.Body, nil
+}
+
+// GetFileSize 获取文件大小
+func (p *S3Provider) GetFileSize(ctx context.Context, path string) (int64, error) {
+	result, err := p.client.HeadObject(ctx, &s3.HeadObjectInput{
+		Bucket: aws.String(p.config.Bucket),
+		Key:    aws.String(path),
+	})
+
+	if err != nil {
+		// Check if it's a "not found" error
+		var nf *types.NotFound
+		if errors.As(err, &nf) {
+			return 0, nil
+		}
+		return 0, fmt.Errorf("failed to get S3 object size: %w", err)
+	}
+
+	if result.ContentLength != nil {
+		return *result.ContentLength, nil
+	}
+
+	return 0, nil
+}

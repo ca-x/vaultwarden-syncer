@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/crypto/pbkdf2"
 	"go.uber.org/zap"
+	"golang.org/x/crypto/pbkdf2"
 )
 
 type Service struct {
@@ -59,7 +59,7 @@ func (s *Service) CreateBackup(ctx context.Context) (io.Reader, string, error) {
 	}
 
 	var buf bytes.Buffer
-	
+
 	if err := s.createZipArchive(&buf); err != nil {
 		s.logger.Error("Failed to create zip archive", zap.Error(err))
 		return nil, "", fmt.Errorf("failed to create zip archive: %w", err)
@@ -164,7 +164,7 @@ func (s *Service) encryptData(data []byte) ([]byte, error) {
 	}
 
 	ciphertext := gcm.Seal(nonce, nonce, data, nil)
-	
+
 	result := make([]byte, len(salt)+len(ciphertext))
 	copy(result, salt)
 	copy(result[len(salt):], ciphertext)
@@ -230,7 +230,7 @@ func (s *Service) ExtractBackup(ctx context.Context, data io.Reader, destPath st
 		}
 
 		destFile := filepath.Join(destPath, file.Name)
-		
+
 		if file.FileInfo().IsDir() {
 			if err := os.MkdirAll(destFile, file.FileInfo().Mode()); err != nil {
 				return err
@@ -263,4 +263,43 @@ func (s *Service) ExtractBackup(ctx context.Context, data io.Reader, destPath st
 	}
 
 	return nil
+}
+
+// CalculateChecksum 计算备份数据的校验和以避免重复备份
+func (s *Service) CalculateChecksum(reader io.Reader) (string, error) {
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		return "", fmt.Errorf("failed to read data for checksum: %w", err)
+	}
+
+	// 计算SHA256校验和
+	hash := sha256.Sum256(data)
+	return fmt.Sprintf("%x", hash), nil
+}
+
+// GetDataInfo 获取数据目录的信息用于比较
+func (s *Service) GetDataInfo() (map[string]time.Time, error) {
+	info := make(map[string]time.Time)
+
+	err := filepath.Walk(s.vaultwardenDataPath, func(path string, fileInfo os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !fileInfo.IsDir() {
+			relPath, err := filepath.Rel(s.vaultwardenDataPath, path)
+			if err != nil {
+				return err
+			}
+			info[relPath] = fileInfo.ModTime()
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to walk data directory: %w", err)
+	}
+
+	return info, nil
 }

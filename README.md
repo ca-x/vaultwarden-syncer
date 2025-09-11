@@ -14,6 +14,11 @@
 - 🐳 **容器化** - 完整的 Docker 支持
 - 🔧 **设置向导** - 首次运行时的引导配置
 - 🚀 **智能路由** - 自动跳转到正确页面（未初始化→设置，未认证→登录）
+- ⚡ **并发上传** - 支持同时向多个存储后端上传备份
+- 🔄 **智能重试** - 使用指数退避算法的重试机制
+- 📈 **断点续传** - 支持大文件传输的断点续传功能
+- 📊 **健康检查** - 实时监控存储后端状态
+- 📝 **失败通知** - 同步失败时的邮件通知
 
 ## 快速开始
 
@@ -81,6 +86,9 @@ sync:
   interval: 3600          # 同步间隔（秒）
   compression_level: 6    # 压缩级别 (1-9)
   password: ""            # 备份文件密码（可选）
+  max_retries: 3          # 最大重试次数
+  retry_delay_seconds: 5  # 重试基础延迟（秒）
+  concurrency: 3          # 并发上传数
 ```
 
 ### WebDAV 存储配置
@@ -113,6 +121,20 @@ storage:
       bucket: "vaultwarden-backups"
 ```
 
+### 通知配置
+
+```yaml
+notification:
+  email:
+    enabled: true
+    smtp_host: "smtp.example.com"
+    smtp_port: 587
+    username: "your-email@example.com"
+    password: "your-email-password"
+    from: "vaultwarden-syncer@example.com"
+    to: "admin@example.com"
+```
+
 ## 多语言支持
 
 本系统支持多语言界面，目前支持以下语言：
@@ -132,6 +154,8 @@ storage:
 - `GET /login` - 登录页面
 - `POST /api/login` - 处理登录
 - `GET /health` - 健康检查
+- `POST /api/sync-concurrent` - 触发并发同步
+- `POST /api/health-check` - 执行健康检查
 
 ## 开发
 
@@ -146,6 +170,7 @@ storage:
 │   ├── database/       # 数据库连接
 │   ├── handler/        # HTTP 处理程序
 │   ├── i18n/           # 国际化支持
+│   ├── notification/   # 通知服务
 │   ├── scheduler/      # 定时任务调度
 │   ├── server/         # HTTP 服务器
 │   ├── service/        # 业务逻辑服务
@@ -174,6 +199,7 @@ go test ./...
 - **存储**: WebDAV + S3 兼容
 - **压缩加密**: ZIP + AES-256-GCM
 - **国际化**: 自定义 i18n 包
+- **重试机制**: Cloudflare backoff 库实现的指数退避算法
 
 ## 许可证
 

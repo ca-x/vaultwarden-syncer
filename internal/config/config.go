@@ -7,13 +7,14 @@ import (
 )
 
 type Config struct {
-	Server     ServerConfig     `mapstructure:"server"`
-	Database   DatabaseConfig   `mapstructure:"database"`
-	Auth       AuthConfig       `mapstructure:"auth"`
-	Storage    StorageConfig    `mapstructure:"storage"`
-	Sync       SyncConfig       `mapstructure:"sync"`
-	Logging    LoggingConfig    `mapstructure:"logging"`
-	Vaultwarden VaultwardenConfig `mapstructure:"vaultwarden"`
+	Server       ServerConfig       `mapstructure:"server"`
+	Database     DatabaseConfig     `mapstructure:"database"`
+	Auth         AuthConfig         `mapstructure:"auth"`
+	Storage      StorageConfig      `mapstructure:"storage"`
+	Sync         SyncConfig         `mapstructure:"sync"`
+	Logging      LoggingConfig      `mapstructure:"logging"`
+	Vaultwarden  VaultwardenConfig  `mapstructure:"vaultwarden"`
+	Notification NotificationConfig `mapstructure:"notification"`
 }
 
 type ServerConfig struct {
@@ -86,10 +87,13 @@ func (c S3Config) Validate() error {
 }
 
 type SyncConfig struct {
-	Interval           int    `mapstructure:"interval"`
-	CompressionLevel   int    `mapstructure:"compression_level"`
-	Password           string `mapstructure:"password"`
-	HistoryRetentionDays int  `mapstructure:"history_retention_days"`
+	Interval             int    `mapstructure:"interval"`
+	CompressionLevel     int    `mapstructure:"compression_level"`
+	Password             string `mapstructure:"password"`
+	HistoryRetentionDays int    `mapstructure:"history_retention_days"`
+	MaxRetries           int    `mapstructure:"max_retries"`
+	RetryDelaySeconds    int    `mapstructure:"retry_delay_seconds"`
+	Concurrency          int    `mapstructure:"concurrency"`
 }
 
 type LoggingConfig struct {
@@ -101,6 +105,20 @@ type VaultwardenConfig struct {
 	DataPath string `mapstructure:"data_path"`
 }
 
+type NotificationConfig struct {
+	Email EmailConfig `mapstructure:"email"`
+}
+
+type EmailConfig struct {
+	Enabled  bool   `mapstructure:"enabled"`
+	SMTPHost string `mapstructure:"smtp_host"`
+	SMTPPort int    `mapstructure:"smtp_port"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	From     string `mapstructure:"from"`
+	To       string `mapstructure:"to"`
+}
+
 func Load() (*Config, error) {
 	viper.SetDefault("server.port", 8181)
 	viper.SetDefault("database.driver", "sqlite3")
@@ -108,9 +126,14 @@ func Load() (*Config, error) {
 	viper.SetDefault("sync.interval", 3600)
 	viper.SetDefault("sync.compression_level", 6)
 	viper.SetDefault("sync.history_retention_days", 30)
+	viper.SetDefault("sync.max_retries", 3)
+	viper.SetDefault("sync.retry_delay_seconds", 5)
+	viper.SetDefault("sync.concurrency", 3)
 	viper.SetDefault("logging.level", "info")
 	viper.SetDefault("logging.file", "./logs/vaultwarden-syncer.log")
 	viper.SetDefault("vaultwarden.data_path", "./data/vaultwarden")
+	viper.SetDefault("notification.email.enabled", false)
+	viper.SetDefault("notification.email.smtp_port", 587)
 
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")

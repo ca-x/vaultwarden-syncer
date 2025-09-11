@@ -18,6 +18,18 @@
             </div>
             {{end}}
         </div>
+        
+        <!-- 添加并发同步和健康检查按钮 -->
+        <div class="actions" style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button class="btn btn-primary" hx-post="/api/sync-concurrent" hx-target="#result" hx-swap="innerHTML">
+                <iconify-icon icon="mdi:sync" class="icon-white"></iconify-icon>
+                {{call .T "dashboard.sync_concurrent"}}
+            </button>
+            <button class="btn btn-secondary" hx-post="/api/health-check" hx-target="#result" hx-swap="innerHTML">
+                <iconify-icon icon="mdi:heart-pulse" class="icon-white"></iconify-icon>
+                {{call .T "dashboard.health_check"}}
+            </button>
+        </div>
     </section>
     
     <section class="glass-card card">
@@ -38,6 +50,9 @@
         <a href="/settings" class="btn btn-outline">{{call .T "dashboard.configure"}}</a>
     </section>
 </div>
+
+<!-- 结果显示区域 -->
+<div id="result" class="result-container" style="margin-top: 1rem;"></div>
 
 <script>
 // Real-time sync status updates

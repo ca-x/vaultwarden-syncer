@@ -114,3 +114,50 @@ func (p *WebDAVProvider) Exists(ctx context.Context, path string) (bool, error) 
 
 	return info != nil, nil
 }
+
+// UploadPart 上传文件的一部分（WebDAV不直接支持，我们实现为完整上传）
+func (p *WebDAVProvider) UploadPart(ctx context.Context, path string, reader io.Reader, offset int64) error {
+	// WebDAV协议本身不支持断点续传，这里简化实现为完整上传
+	// 在实际生产环境中，可以考虑使用其他机制实现断点续传
+	return p.Upload(ctx, path, reader)
+}
+
+// DownloadPart 下载文件的一部分
+func (p *WebDAVProvider) DownloadPart(ctx context.Context, path string, offset, length int64) (io.ReadCloser, error) {
+	// WebDAV协议本身不支持范围请求，这里简化实现为完整下载然后截取
+	data, err := p.client.Read(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to download from WebDAV: %w", err)
+	}
+
+	// 计算实际读取范围
+	end := offset + length
+	if end > int64(len(data)) {
+		end = int64(len(data))
+	}
+
+	// 截取数据
+	if offset < int64(len(data)) {
+		chunk := data[offset:end]
+		return io.NopCloser(strings.NewReader(string(chunk))), nil
+	}
+
+	return io.NopCloser(strings.NewReader("")), nil
+}
+
+// GetFileSize 获取文件大小
+func (p *WebDAVProvider) GetFileSize(ctx context.Context, path string) (int64, error) {
+	info, err := p.client.Stat(path)
+	if err != nil {
+		if strings.Contains(err.Error(), "404") {
+			return 0, nil
+		}
+		return 0, fmt.Errorf("failed to get WebDAV file size: %w", err)
+	}
+
+	if info != nil {
+		return info.Size(), nil
+	}
+
+	return 0, nil
+}

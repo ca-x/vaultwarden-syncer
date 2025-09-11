@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"time"
+
 	"github.com/ca-x/vaultwarden-syncer/ent"
 	"github.com/ca-x/vaultwarden-syncer/ent/storage"
 	"github.com/ca-x/vaultwarden-syncer/internal/cleanup"
@@ -22,6 +23,15 @@ type Service struct {
 }
 
 func NewService(client *ent.Client, syncService *sync.Service, cleanupService *cleanup.Service, config *config.Config) *Service {
+	// 设置同步服务的配置
+	if config.Sync.MaxRetries > 0 || config.Sync.RetryDelaySeconds > 0 {
+		syncService.SetRetryConfig(config.Sync.MaxRetries, time.Duration(config.Sync.RetryDelaySeconds)*time.Second)
+	}
+
+	if config.Sync.Concurrency > 0 {
+		syncService.SetConcurrency(config.Sync.Concurrency)
+	}
+
 	return &Service{
 		client:         client,
 		syncService:    syncService,
@@ -39,7 +49,7 @@ func (s *Service) Start(ctx context.Context) error {
 
 		go func() {
 			log.Printf("Sync scheduler started with interval: %v", interval)
-			
+
 			for {
 				select {
 				case <-s.ticker.C:
@@ -64,13 +74,13 @@ func (s *Service) Start(ctx context.Context) error {
 
 		go func() {
 			log.Printf("Cleanup scheduler started with daily interval")
-			
+
 			// Run initial cleanup after 1 minute
 			time.Sleep(1 * time.Minute)
 			if err := s.runCleanup(ctx); err != nil {
 				log.Printf("Initial cleanup failed: %v", err)
 			}
-			
+
 			for {
 				select {
 				case <-s.cleanupTicker.C:
@@ -117,11 +127,16 @@ func (s *Service) runSync(ctx context.Context) error {
 
 	log.Printf("Starting scheduled sync to %d storage backends", len(storages))
 
-	for _, st := range storages {
-		if err := s.syncService.SyncToStorage(ctx, st.ID); err != nil {
-			log.Printf("Failed to sync to storage %s: %v", st.Name, err)
-			continue
-		}
+	// 收集存储ID
+	storageIDs := make([]int, len(storages))
+	for i, st := range storages {
+		storageIDs[i] = st.ID
+	}
+
+	// 使用并发同步
+	if err := s.syncService.ConcurrentSyncToStorages(ctx, storageIDs); err != nil {
+		log.Printf("Failed to concurrently sync to storage backends: %v", err)
+		return err
 	}
 
 	log.Println("Scheduled sync completed")
@@ -135,11 +150,11 @@ func (s *Service) RunSyncNow(ctx context.Context) error {
 
 func (s *Service) runCleanup(ctx context.Context) error {
 	log.Println("Starting scheduled cleanup of old sync job records")
-	
+
 	if err := s.cleanupService.CleanupOldSyncJobs(ctx); err != nil {
 		return err
 	}
-	
+
 	log.Println("Scheduled sync job cleanup completed")
 	return nil
 }
@@ -147,4 +162,25 @@ func (s *Service) runCleanup(ctx context.Context) error {
 func (s *Service) RunCleanupNow(ctx context.Context) error {
 	log.Println("Manual cleanup triggered")
 	return s.runCleanup(ctx)
+}
+
+// HealthCheckAll 检查所有启用的存储后端健康状态
+func (s *Service) HealthCheckAll(ctx context.Context) map[string]error {
+	storages, err := s.client.Storage.
+		Query().
+		Where(storage.Enabled(true)).
+		All(ctx)
+
+	if err != nil {
+		return map[string]error{"query": err}
+	}
+
+	results := make(map[string]error)
+
+	for _, st := range storages {
+		err := s.syncService.HealthCheck(ctx, st.ID)
+		results[st.Name] = err
+	}
+
+	return results
 }

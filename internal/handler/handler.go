@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ca-x/vaultwarden-syncer/ent"
@@ -23,13 +24,13 @@ import (
 )
 
 type Handler struct {
-	userService     *service.UserService
-	setupService    *setup.SetupService
-	syncService     *sync.Service
-	cleanupService  *cleanup.Service
+	userService      *service.UserService
+	setupService     *setup.SetupService
+	syncService      *sync.Service
+	cleanupService   *cleanup.Service
 	schedulerService *scheduler.Service
-	client          *ent.Client
-	tmplManager     *template.Manager
+	client           *ent.Client
+	tmplManager      *template.Manager
 }
 
 func New(userService *service.UserService, setupService *setup.SetupService, syncService *sync.Service, cleanupService *cleanup.Service, schedulerService *scheduler.Service, client *ent.Client) *Handler {
@@ -83,15 +84,15 @@ func (h *Handler) Index(c echo.Context) error {
 	syncStatusClass := "icon-info"
 	syncStatusIcon := "mdi:information"
 	lastSyncError := ""
-	
+
 	lastJob, err := h.client.SyncJob.Query().
 		WithStorage().
 		Order(ent.Desc(syncjob.FieldCreatedAt)).
 		First(c.Request().Context())
-	
+
 	if err == nil {
 		lastSyncTime = lastJob.CreatedAt.Format("2006-01-02 15:04")
-		
+
 		switch lastJob.Status {
 		case syncjob.StatusCompleted:
 			syncStatus = translator.T(lang, "status.sync_success")
@@ -224,7 +225,7 @@ func (h *Handler) Login(c echo.Context) error {
 func (h *Handler) HandleLogin(c echo.Context) error {
 	username := c.FormValue("username")
 	password := c.FormValue("password")
-	
+
 	// Get language and translator from context
 	lang := i18n.GetLanguageFromContext(c.Request().Context())
 	translator := i18n.GetTranslatorFromContext(c.Request().Context())
@@ -236,7 +237,7 @@ func (h *Handler) HandleLogin(c echo.Context) error {
 		if h.tmplManager == nil {
 			return c.HTML(http.StatusBadRequest, `<div class="result error">Username and password are required</div>`)
 		}
-		
+
 		message := h.tmplManager.CreateMessage("error", translator.T(lang, "auth.error.missing_fields"))
 		html, err := h.tmplManager.RenderLoginWithMessage(lang, translator, message)
 		if err != nil {
@@ -250,7 +251,7 @@ func (h *Handler) HandleLogin(c echo.Context) error {
 		if h.tmplManager == nil {
 			return c.HTML(http.StatusUnauthorized, `<div class="result error">Invalid credentials</div>`)
 		}
-		
+
 		message := h.tmplManager.CreateMessage("error", translator.T(lang, "auth.error.invalid_credentials"))
 		html, err := h.tmplManager.RenderLoginWithMessage(lang, translator, message)
 		if err != nil {
@@ -271,11 +272,11 @@ func (h *Handler) HandleLogin(c echo.Context) error {
 
 	// Use HTMX redirect header to navigate to dashboard
 	c.Response().Header().Set("HX-Redirect", "/")
-	
+
 	if h.tmplManager == nil {
 		return c.HTML(http.StatusOK, `<div class="result success">Welcome, `+user.Username+`! Redirecting...</div>`)
 	}
-	
+
 	message := h.tmplManager.CreateMessage("success", translator.T(lang, "auth.success.welcome", user.Username))
 	html, err := h.tmplManager.RenderLoginWithMessage(lang, translator, message)
 	if err != nil {
@@ -592,6 +593,87 @@ func (h *Handler) TriggerSync(c echo.Context) error {
 	</div>`)
 }
 
+// TriggerConcurrentSync 手动触发并发同步到所有启用的存储后端
+func (h *Handler) TriggerConcurrentSync(c echo.Context) error {
+	// 获取所有启用的存储后端
+	storages, err := h.client.Storage.Query().
+		Where(storage.Enabled(true)).
+		All(c.Request().Context())
+
+	if err != nil {
+		return c.HTML(http.StatusInternalServerError, `<div class="result error">Failed to load storage backends</div>`)
+	}
+
+	if len(storages) == 0 {
+		return c.HTML(http.StatusBadRequest, `<div class="result error">No enabled storage backends found</div>`)
+	}
+
+	// 收集存储ID
+	storageIDs := make([]int, len(storages))
+	for i, st := range storages {
+		storageIDs[i] = st.ID
+	}
+
+	// 在后台启动并发同步
+	go func() {
+		ctx := context.Background()
+		if err := h.syncService.ConcurrentSyncToStorages(ctx, storageIDs); err != nil {
+			// 记录错误日志
+			fmt.Printf("Concurrent sync failed: %v\n", err)
+		}
+	}()
+
+	return c.HTML(http.StatusOK, `<div class="result success">
+		<iconify-icon icon="mdi:sync" class="icon-success"></iconify-icon>
+		Concurrent sync triggered successfully! Check the dashboard for progress.
+	</div>`)
+}
+
+// HealthCheckAll 执行所有存储后端的健康检查
+func (h *Handler) HealthCheckAll(c echo.Context) error {
+	results := h.schedulerService.HealthCheckAll(c.Request().Context())
+
+	var failed []string
+	var passed []string
+
+	for storage, err := range results {
+		if err != nil {
+			failed = append(failed, fmt.Sprintf("- %s: %v", storage, err))
+		} else {
+			passed = append(passed, fmt.Sprintf("- %s: OK", storage))
+		}
+	}
+
+	// 准备响应消息
+	var message strings.Builder
+	if len(failed) > 0 {
+		message.WriteString("Failed storage backends:\n")
+		message.WriteString(strings.Join(failed, "\n"))
+		message.WriteString("\n\n")
+	}
+
+	if len(passed) > 0 {
+		message.WriteString("Healthy storage backends:\n")
+		message.WriteString(strings.Join(passed, "\n"))
+		message.WriteString("\n")
+	}
+
+	// 如果有失败的存储后端，返回错误状态
+	if len(failed) > 0 {
+		return c.HTML(http.StatusOK, fmt.Sprintf(`<div class="result error">
+			<iconify-icon icon="mdi:alert-circle" class="icon-danger"></iconify-icon>
+			Health check completed with %d failed backend(s)<br><br>
+			<pre>%s</pre>
+		</div>`, len(failed), message.String()))
+	}
+
+	return c.HTML(http.StatusOK, fmt.Sprintf(`<div class="result success">
+		<iconify-icon icon="mdi:check-circle" class="icon-success"></iconify-icon>
+		All storage backends are healthy (%d passed)<br><br>
+		<pre>%s</pre>
+	</div>`, len(passed), message.String()))
+}
+
 // GetSyncJobs returns the list of sync jobs
 func (h *Handler) GetSyncJobs(c echo.Context) error {
 	jobs, err := h.client.SyncJob.
@@ -623,15 +705,15 @@ func (h *Handler) GetSyncStatus(c echo.Context) error {
 	syncStatusIcon := "mdi:information"
 	lastSyncTime := translator.T(lang, "time.never")
 	lastSyncError := ""
-	
+
 	lastJob, err := h.client.SyncJob.Query().
 		WithStorage().
 		Order(ent.Desc(syncjob.FieldCreatedAt)).
 		First(c.Request().Context())
-	
+
 	if err == nil {
 		lastSyncTime = lastJob.CreatedAt.Format("2006-01-02 15:04")
-		
+
 		switch lastJob.Status {
 		case syncjob.StatusCompleted:
 			syncStatus = translator.T(lang, "status.sync_success")

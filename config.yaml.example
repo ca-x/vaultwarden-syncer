@@ -63,6 +63,28 @@ sync:
   # History retention in days (sync job records older than this will be automatically deleted)
   # Default: 30 days, set to 0 to disable automatic cleanup
   history_retention_days: 30
+  # Maximum number of retry attempts for failed operations
+  max_retries: 3
+  # Base delay between retry attempts (uses exponential backoff)
+  retry_delay_seconds: 5
+  # Number of concurrent uploads (affects performance)
+  concurrency: 3
+
+# Notification configuration
+notification:
+  # Email notification settings
+  email:
+    # Enable email notifications
+    enabled: false
+    # SMTP server configuration
+    smtp_host: "smtp.example.com"
+    smtp_port: 587
+    # SMTP authentication
+    username: "your-email@example.com"
+    password: "your-email-password"
+    # Email addresses
+    from: "vaultwarden-syncer@example.com"
+    to: "admin@example.com"
 
 # Logging configuration
 logging:

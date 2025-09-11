@@ -73,6 +73,8 @@ func New(cfg *config.Config, handler *handler.Handler, authService *auth.Service
 	protected.PUT("/api/storage/:id", handler.UpdateStorage)
 	protected.DELETE("/api/storage/:id", handler.DeleteStorage)
 	protected.POST("/api/sync/:id", handler.TriggerSync)
+	protected.POST("/api/sync-concurrent", handler.TriggerConcurrentSync) // 添加并发同步端点
+	protected.POST("/api/health-check", handler.HealthCheckAll)           // 添加健康检查端点
 	protected.GET("/api/jobs", handler.GetSyncJobs)
 	protected.GET("/api/sync/status", handler.GetSyncStatus)
 	protected.POST("/api/cleanup", handler.TriggerCleanup)
