@@ -2,3 +2,4 @@ cmd/server/*.exe
 cmd/server/data/*.db*
 logs/
 data/
+*.exe
