@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
+	"html/template"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -18,7 +20,7 @@ import (
 	"github.com/ca-x/vaultwarden-syncer/internal/service"
 	"github.com/ca-x/vaultwarden-syncer/internal/setup"
 	"github.com/ca-x/vaultwarden-syncer/internal/sync"
-	"github.com/ca-x/vaultwarden-syncer/internal/template"
+	tmpl "github.com/ca-x/vaultwarden-syncer/internal/template"
 
 	"github.com/labstack/echo/v4"
 )
@@ -30,11 +32,11 @@ type Handler struct {
 	cleanupService   *cleanup.Service
 	schedulerService *scheduler.Service
 	client           *ent.Client
-	tmplManager      *template.Manager
+	tmplManager      *tmpl.Manager
 }
 
 func New(userService *service.UserService, setupService *setup.SetupService, syncService *sync.Service, cleanupService *cleanup.Service, schedulerService *scheduler.Service, client *ent.Client) *Handler {
-	tmplManager, err := template.New()
+	tmplManager, err := tmpl.New()
 	if err != nil {
 		// Log error but don't fail, fallback to basic responses
 		fmt.Printf("Failed to create template manager: %v\n", err)
@@ -122,7 +124,7 @@ func (h *Handler) Index(c echo.Context) error {
 		jobsCount = 0
 	}
 
-	dashboardData := template.DashboardData{
+	dashboardData := tmpl.DashboardData{
 		StorageCount:    storageCount,
 		LastSync:        lastSyncTime,
 		BackupSize:      translator.T(lang, "status.calculating"),
@@ -358,57 +360,89 @@ func (h *Handler) CreateStorage(c echo.Context) error {
 	name := c.FormValue("name")
 	storageType := c.FormValue("type")
 	enabled := c.FormValue("enabled") == "on"
-	configJSON := c.FormValue("config")
 
 	// Validate required fields
 	if name == "" || storageType == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Name and type are required"})
 	}
 
-	// Parse config JSON
-	var config map[string]interface{}
-	if configJSON != "" {
-		if err := json.Unmarshal([]byte(configJSON), &config); err != nil {
-			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid config JSON"})
-		}
-	} else {
-		// If no config JSON provided, build config from form fields
-		config = make(map[string]interface{})
-
-		if storageType == "webdav" {
-			config["url"] = c.FormValue("webdav_url")
-			config["username"] = c.FormValue("webdav_username")
-			config["password"] = c.FormValue("webdav_password")
-
-			// Validate WebDAV required fields
-			if config["url"] == "" || config["username"] == "" || config["password"] == "" {
-				return c.JSON(http.StatusBadRequest, map[string]string{"error": "WebDAV requires URL, username, and password"})
-			}
-		} else if storageType == "s3" {
-			config["endpoint"] = c.FormValue("s3_endpoint")
-			config["access_key_id"] = c.FormValue("s3_access_key_id")
-			config["secret_access_key"] = c.FormValue("s3_secret_access_key")
-			config["region"] = c.FormValue("s3_region")
-			config["bucket"] = c.FormValue("s3_bucket")
-
-			// Validate S3 required fields (endpoint is optional)
-			if config["access_key_id"] == "" || config["secret_access_key"] == "" ||
-				config["region"] == "" || config["bucket"] == "" {
-				return c.JSON(http.StatusBadRequest, map[string]string{"error": "S3 requires access key ID, secret access key, region, and bucket"})
-			}
-		}
+	// Start a transaction
+	tx, err := h.client.Tx(c.Request().Context())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to start transaction"})
 	}
+	defer tx.Rollback()
 
-	_, err := h.client.Storage.
+	// Create the storage record
+	storage, err := tx.Storage.
 		Create().
 		SetName(name).
 		SetType(storage.Type(storageType)).
-		SetConfig(config).
 		SetEnabled(enabled).
 		Save(c.Request().Context())
 
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create storage: " + err.Error()})
+	}
+
+	// Create type-specific config based on storage type
+	if storageType == "webdav" {
+		url := c.FormValue("webdav_url")
+		username := c.FormValue("webdav_username")
+		password := c.FormValue("webdav_password")
+
+		// Validate WebDAV required fields
+		if url == "" || username == "" || password == "" {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "WebDAV requires URL, username, and password"})
+		}
+
+		// Create WebDAV config
+		_, err = tx.WebDAVConfig.
+			Create().
+			SetURL(url).
+			SetUsername(username).
+			SetPassword(password).
+			SetStorageID(storage.ID).
+			Save(c.Request().Context())
+
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create WebDAV config: " + err.Error()})
+		}
+	} else if storageType == "s3" {
+		endpoint := c.FormValue("s3_endpoint")
+		accessKeyID := c.FormValue("s3_access_key_id")
+		secretAccessKey := c.FormValue("s3_secret_access_key")
+		region := c.FormValue("s3_region")
+		bucket := c.FormValue("s3_bucket")
+
+		// Validate S3 required fields (endpoint is optional)
+		if accessKeyID == "" || secretAccessKey == "" || region == "" || bucket == "" {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "S3 requires access key ID, secret access key, region, and bucket"})
+		}
+
+		// Create S3 config
+		s3Create := tx.S3Config.
+			Create().
+			SetAccessKeyID(accessKeyID).
+			SetSecretAccessKey(secretAccessKey).
+			SetRegion(region).
+			SetBucket(bucket).
+			SetStorageID(storage.ID)
+
+		if endpoint != "" {
+			s3Create.SetEndpoint(endpoint)
+		}
+
+		_, err = s3Create.Save(c.Request().Context())
+
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create S3 config: " + err.Error()})
+		}
+	}
+
+	// Commit the transaction
+	if err := tx.Commit(); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to commit transaction: " + err.Error()})
 	}
 
 	// Reload storage list to show the new storage
@@ -462,58 +496,141 @@ func (h *Handler) UpdateStorage(c echo.Context) error {
 	name := c.FormValue("name")
 	storageType := c.FormValue("type")
 	enabled := c.FormValue("enabled") == "on"
-	configJSON := c.FormValue("config")
 
 	// Validate required fields
 	if name == "" || storageType == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Name and type are required"})
 	}
 
-	// Parse config JSON
-	var config map[string]interface{}
-	if configJSON != "" {
-		if err := json.Unmarshal([]byte(configJSON), &config); err != nil {
-			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid config JSON"})
-		}
-	} else {
-		// If no config JSON provided, build config from form fields
-		config = make(map[string]interface{})
-
-		if storageType == "webdav" {
-			config["url"] = c.FormValue("webdav_url")
-			config["username"] = c.FormValue("webdav_username")
-			config["password"] = c.FormValue("webdav_password")
-
-			// Validate WebDAV required fields
-			if config["url"] == "" || config["username"] == "" || config["password"] == "" {
-				return c.JSON(http.StatusBadRequest, map[string]string{"error": "WebDAV requires URL, username, and password"})
-			}
-		} else if storageType == "s3" {
-			config["endpoint"] = c.FormValue("s3_endpoint")
-			config["access_key_id"] = c.FormValue("s3_access_key_id")
-			config["secret_access_key"] = c.FormValue("s3_secret_access_key")
-			config["region"] = c.FormValue("s3_region")
-			config["bucket"] = c.FormValue("s3_bucket")
-
-			// Validate S3 required fields (endpoint is optional)
-			if config["access_key_id"] == "" || config["secret_access_key"] == "" ||
-				config["region"] == "" || config["bucket"] == "" {
-				return c.JSON(http.StatusBadRequest, map[string]string{"error": "S3 requires access key ID, secret access key, region, and bucket"})
-			}
-		}
+	// Start a transaction
+	tx, err := h.client.Tx(c.Request().Context())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to start transaction"})
 	}
+	defer tx.Rollback()
 
-	_, err = h.client.Storage.
+	// Update the storage record
+	_, err = tx.Storage.
 		UpdateOneID(id).
 		SetName(name).
 		SetType(storage.Type(storageType)).
-		SetConfig(config).
 		SetEnabled(enabled).
 		SetUpdatedAt(time.Now()).
 		Save(c.Request().Context())
 
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to update storage: " + err.Error()})
+	}
+
+	// Load existing storage with configs to check what we have
+	existingStorage, err := h.client.Storage.Query().
+		Where(storage.ID(id)).
+		WithWebdavConfig().
+		WithS3Config().
+		Only(c.Request().Context())
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to load existing storage: " + err.Error()})
+	}
+
+	// Handle config updates based on storage type
+	if storageType == "webdav" {
+		url := c.FormValue("webdav_url")
+		username := c.FormValue("webdav_username")
+		password := c.FormValue("webdav_password")
+
+		// Validate WebDAV required fields
+		if url == "" || username == "" {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "WebDAV requires URL and username"})
+		}
+
+		// Use existing password if not provided
+		if password == "" && existingStorage.Edges.WebdavConfig != nil {
+			password = existingStorage.Edges.WebdavConfig.Password
+		}
+
+		// Validate password is provided (either new or existing)
+		if password == "" {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "WebDAV requires password"})
+		}
+
+		// Delete existing config if it exists
+		if existingStorage.Edges.WebdavConfig != nil {
+			err = tx.WebDAVConfig.
+				DeleteOne(existingStorage.Edges.WebdavConfig).
+				Exec(c.Request().Context())
+			if err != nil {
+				return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to delete existing WebDAV config: " + err.Error()})
+			}
+		}
+
+		// Create new WebDAV config
+		_, err = tx.WebDAVConfig.
+			Create().
+			SetURL(url).
+			SetUsername(username).
+			SetPassword(password).
+			SetStorageID(id).
+			Save(c.Request().Context())
+
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create WebDAV config: " + err.Error()})
+		}
+	} else if storageType == "s3" {
+		endpoint := c.FormValue("s3_endpoint")
+		accessKeyID := c.FormValue("s3_access_key_id")
+		secretAccessKey := c.FormValue("s3_secret_access_key")
+		region := c.FormValue("s3_region")
+		bucket := c.FormValue("s3_bucket")
+
+		// Validate S3 required fields
+		if accessKeyID == "" || region == "" || bucket == "" {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "S3 requires access key ID, region, and bucket"})
+		}
+
+		// Use existing secret access key if not provided
+		if secretAccessKey == "" && existingStorage.Edges.S3Config != nil {
+			secretAccessKey = existingStorage.Edges.S3Config.SecretAccessKey
+		}
+
+		// Validate secret access key is provided (either new or existing)
+		if secretAccessKey == "" {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "S3 requires secret access key"})
+		}
+
+		// Delete existing config if it exists
+		if existingStorage.Edges.S3Config != nil {
+			err = tx.S3Config.
+				DeleteOne(existingStorage.Edges.S3Config).
+				Exec(c.Request().Context())
+			if err != nil {
+				return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to delete existing S3 config: " + err.Error()})
+			}
+		}
+
+		// Create new S3 config
+		s3Create := tx.S3Config.
+			Create().
+			SetAccessKeyID(accessKeyID).
+			SetSecretAccessKey(secretAccessKey).
+			SetRegion(region).
+			SetBucket(bucket).
+			SetStorageID(id)
+
+		if endpoint != "" {
+			s3Create.SetEndpoint(endpoint)
+		}
+
+		_, err = s3Create.Save(c.Request().Context())
+
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create S3 config: " + err.Error()})
+		}
+	}
+
+	// Commit the transaction
+	if err := tx.Commit(); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to commit transaction: " + err.Error()})
 	}
 
 	// Reload storage list to show the updated storage
@@ -569,12 +686,12 @@ func (h *Handler) TriggerSync(c echo.Context) error {
 	}
 
 	// Check if storage exists and is enabled
-	storage, err := h.client.Storage.Get(c.Request().Context(), id)
+	st, err := h.client.Storage.Get(c.Request().Context(), id)
 	if err != nil {
 		return c.HTML(http.StatusNotFound, `<div class="result error">Storage not found</div>`)
 	}
 
-	if !storage.Enabled {
+	if !st.Enabled {
 		return c.HTML(http.StatusBadRequest, `<div class="result error">Storage is disabled</div>`)
 	}
 
@@ -769,4 +886,224 @@ func (h *Handler) GetSyncJobStats(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, stats)
+}
+
+// DownloadLogs allows users to download the application logs
+func (h *Handler) DownloadLogs(c echo.Context) error {
+	// Get the log file path from config
+	logFile := "./logs/vaultwarden-syncer.log" // Default path
+
+	// Try to get the actual log file path from the logger if possible
+	// For now, we'll use the default path
+
+	// Check if file exists
+	if _, err := os.Stat(logFile); os.IsNotExist(err) {
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "Log file not found"})
+	}
+
+	// Set headers for file download
+	c.Response().Header().Set("Content-Disposition", "attachment; filename=vaultwarden-syncer.log")
+	c.Response().Header().Set("Content-Type", "text/plain")
+
+	// Return the file
+	return c.File(logFile)
+}
+
+// GetStorages returns the list of all storages for manual sync selection
+func (h *Handler) GetStorages(c echo.Context) error {
+	storages, err := h.client.Storage.Query().All(c.Request().Context())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to load storages"})
+	}
+
+	// Create a simplified response structure
+	type storageResponse struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+		Type string `json:"type"`
+	}
+
+	response := make([]storageResponse, len(storages))
+	for i, s := range storages {
+		response[i] = storageResponse{
+			ID:   s.ID,
+			Name: s.Name,
+			Type: string(s.Type),
+		}
+	}
+
+	return c.JSON(http.StatusOK, response)
+}
+
+// TriggerManualSync manually triggers a sync for selected storages
+func (h *Handler) TriggerManualSync(c echo.Context) error {
+	// Parse request body
+	var request struct {
+		StorageIDs []int `json:"storage_ids"`
+	}
+
+	if err := c.Bind(&request); err != nil {
+		return c.HTML(http.StatusBadRequest, `<div class="result error">Invalid request format</div>`)
+	}
+
+	// If no storage IDs provided or "all" selected, sync all enabled storages
+	if len(request.StorageIDs) == 0 || (len(request.StorageIDs) == 1 && request.StorageIDs[0] == 0) {
+		storages, err := h.client.Storage.Query().
+			Where(storage.Enabled(true)).
+			All(c.Request().Context())
+
+		if err != nil {
+			return c.HTML(http.StatusInternalServerError, `<div class="result error">Failed to load storage backends</div>`)
+		}
+
+		if len(storages) == 0 {
+			return c.HTML(http.StatusBadRequest, `<div class="result error">No enabled storage backends found</div>`)
+		}
+
+		// Collect storage IDs
+		request.StorageIDs = make([]int, len(storages))
+		for i, st := range storages {
+			request.StorageIDs[i] = st.ID
+		}
+	}
+
+	// Validate that all requested storages exist and are enabled
+	validStorages := make([]int, 0, len(request.StorageIDs))
+	storageNames := make([]string, 0, len(request.StorageIDs))
+
+	for _, id := range request.StorageIDs {
+		st, err := h.client.Storage.Get(c.Request().Context(), id)
+		if err != nil {
+			continue // Skip invalid storage IDs
+		}
+
+		if !st.Enabled {
+			continue // Skip disabled storages
+		}
+
+		validStorages = append(validStorages, id)
+		storageNames = append(storageNames, st.Name)
+	}
+
+	if len(validStorages) == 0 {
+		return c.HTML(http.StatusBadRequest, `<div class="result error">No valid enabled storage backends selected</div>`)
+	}
+
+	// Start sync in background
+	go func() {
+		ctx := context.Background()
+		if len(validStorages) == 1 {
+			// Single storage sync
+			if err := h.syncService.SyncToStorage(ctx, validStorages[0]); err != nil {
+				fmt.Printf("Manual sync failed for storage %d: %v\n", validStorages[0], err)
+			}
+		} else {
+			// Concurrent sync for multiple storages
+			if err := h.syncService.ConcurrentSyncToStorages(ctx, validStorages); err != nil {
+				fmt.Printf("Manual concurrent sync failed: %v\n", err)
+			}
+		}
+	}()
+
+	// Return success message
+	if len(validStorages) == 1 {
+		return c.HTML(http.StatusOK, fmt.Sprintf(`<div class="result success">
+			<iconify-icon icon="mdi:sync" class="icon-success"></iconify-icon>
+			Sync triggered successfully for %s! Check the dashboard for progress.
+		</div>`, storageNames[0]))
+	} else {
+		return c.HTML(http.StatusOK, fmt.Sprintf(`<div class="result success">
+			<iconify-icon icon="mdi:sync" class="icon-success"></iconify-icon>
+			Concurrent sync triggered successfully for %d storage(s)! Check the dashboard for progress.
+		</div>`, len(validStorages)))
+	}
+}
+
+// EditStorage displays the edit storage page
+func (h *Handler) EditStorage(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid storage ID"})
+	}
+
+	// Get the storage with its config
+	storage, err := h.client.Storage.Query().
+		Where(storage.ID(id)).
+		WithWebdavConfig().
+		WithS3Config().
+		Only(c.Request().Context())
+
+	if err != nil {
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "Storage not found"})
+	}
+
+	if h.tmplManager == nil {
+		return c.String(http.StatusInternalServerError, "Template manager not available")
+	}
+
+	// Prepare config data
+	config := make(map[string]interface{})
+	if storage.Edges.WebdavConfig != nil {
+		config["url"] = storage.Edges.WebdavConfig.URL
+		config["username"] = storage.Edges.WebdavConfig.Username
+		// Don't send password to frontend for security
+		config["password"] = ""
+	} else if storage.Edges.S3Config != nil {
+		config["endpoint"] = storage.Edges.S3Config.Endpoint
+		config["access_key_id"] = storage.Edges.S3Config.AccessKeyID
+		// Don't send secret access key to frontend for security
+		config["secret_access_key"] = ""
+		config["region"] = storage.Edges.S3Config.Region
+		config["bucket"] = storage.Edges.S3Config.Bucket
+	}
+
+	// Get language and translator from context
+	lang := i18n.GetLanguageFromContext(c.Request().Context())
+	translator := i18n.GetTranslatorFromContext(c.Request().Context())
+	if translator == nil {
+		translator = i18n.New()
+	}
+
+	// Prepare template data
+	templateData := struct {
+		Storage *ent.Storage
+		Config  map[string]interface{}
+		T       func(string, ...interface{}) string
+	}{
+		Storage: storage,
+		Config:  config,
+		T: func(key string, args ...interface{}) string {
+			return translator.T(lang, key, args...)
+		},
+	}
+
+	var content bytes.Buffer
+	err = h.tmplManager.ExecuteTemplate(&content, "storage-edit.html", templateData)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to render storage edit page")
+	}
+
+	pageData := tmpl.PageData{
+		Title:      translator.T(lang, "storage.edit"),
+		AuthLayout: false,
+		ShowNav:    true,
+		NavItems: []tmpl.NavItem{
+			{URL: "/", Icon: h.tmplManager.Icon("dashboard"), Text: translator.T(lang, "nav.dashboard")},
+			{URL: "/storage", Icon: h.tmplManager.Icon("database"), Text: translator.T(lang, "nav.storage")},
+			{URL: "/settings", Icon: h.tmplManager.Icon("settings"), Text: translator.T(lang, "nav.settings")},
+			{URL: "/logout", Icon: h.tmplManager.Icon("logout"), Text: translator.T(lang, "nav.logout")},
+		},
+		Content: template.HTML(content.String()),
+		Lang:    lang,
+		T: func(key string, args ...interface{}) string {
+			return translator.T(lang, key, args...)
+		},
+	}
+
+	html, err := h.tmplManager.RenderLayout(pageData)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to render page")
+	}
+
+	return c.HTML(http.StatusOK, html)
 }

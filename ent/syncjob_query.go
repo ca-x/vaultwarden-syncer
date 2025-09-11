@@ -31,44 +31,44 @@ type SyncJobQuery struct {
 }
 
 // Where adds a new predicate for the SyncJobQuery builder.
-func (_q *SyncJobQuery) Where(ps ...predicate.SyncJob) *SyncJobQuery {
-	_q.predicates = append(_q.predicates, ps...)
-	return _q
+func (sjq *SyncJobQuery) Where(ps ...predicate.SyncJob) *SyncJobQuery {
+	sjq.predicates = append(sjq.predicates, ps...)
+	return sjq
 }
 
 // Limit the number of records to be returned by this query.
-func (_q *SyncJobQuery) Limit(limit int) *SyncJobQuery {
-	_q.ctx.Limit = &limit
-	return _q
+func (sjq *SyncJobQuery) Limit(limit int) *SyncJobQuery {
+	sjq.ctx.Limit = &limit
+	return sjq
 }
 
 // Offset to start from.
-func (_q *SyncJobQuery) Offset(offset int) *SyncJobQuery {
-	_q.ctx.Offset = &offset
-	return _q
+func (sjq *SyncJobQuery) Offset(offset int) *SyncJobQuery {
+	sjq.ctx.Offset = &offset
+	return sjq
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (_q *SyncJobQuery) Unique(unique bool) *SyncJobQuery {
-	_q.ctx.Unique = &unique
-	return _q
+func (sjq *SyncJobQuery) Unique(unique bool) *SyncJobQuery {
+	sjq.ctx.Unique = &unique
+	return sjq
 }
 
 // Order specifies how the records should be ordered.
-func (_q *SyncJobQuery) Order(o ...syncjob.OrderOption) *SyncJobQuery {
-	_q.order = append(_q.order, o...)
-	return _q
+func (sjq *SyncJobQuery) Order(o ...syncjob.OrderOption) *SyncJobQuery {
+	sjq.order = append(sjq.order, o...)
+	return sjq
 }
 
 // QueryStorage chains the current query on the "storage" edge.
-func (_q *SyncJobQuery) QueryStorage() *StorageQuery {
-	query := (&StorageClient{config: _q.config}).Query()
+func (sjq *SyncJobQuery) QueryStorage() *StorageQuery {
+	query := (&StorageClient{config: sjq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := _q.prepareQuery(ctx); err != nil {
+		if err := sjq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := _q.sqlQuery(ctx)
+		selector := sjq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -77,7 +77,7 @@ func (_q *SyncJobQuery) QueryStorage() *StorageQuery {
 			sqlgraph.To(storage.Table, storage.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, syncjob.StorageTable, syncjob.StorageColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(sjq.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
@@ -85,8 +85,8 @@ func (_q *SyncJobQuery) QueryStorage() *StorageQuery {
 
 // First returns the first SyncJob entity from the query.
 // Returns a *NotFoundError when no SyncJob was found.
-func (_q *SyncJobQuery) First(ctx context.Context) (*SyncJob, error) {
-	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
+func (sjq *SyncJobQuery) First(ctx context.Context) (*SyncJob, error) {
+	nodes, err := sjq.Limit(1).All(setContextOp(ctx, sjq.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -97,8 +97,8 @@ func (_q *SyncJobQuery) First(ctx context.Context) (*SyncJob, error) {
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (_q *SyncJobQuery) FirstX(ctx context.Context) *SyncJob {
-	node, err := _q.First(ctx)
+func (sjq *SyncJobQuery) FirstX(ctx context.Context) *SyncJob {
+	node, err := sjq.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -107,9 +107,9 @@ func (_q *SyncJobQuery) FirstX(ctx context.Context) *SyncJob {
 
 // FirstID returns the first SyncJob ID from the query.
 // Returns a *NotFoundError when no SyncJob ID was found.
-func (_q *SyncJobQuery) FirstID(ctx context.Context) (id int, err error) {
+func (sjq *SyncJobQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
+	if ids, err = sjq.Limit(1).IDs(setContextOp(ctx, sjq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -120,8 +120,8 @@ func (_q *SyncJobQuery) FirstID(ctx context.Context) (id int, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (_q *SyncJobQuery) FirstIDX(ctx context.Context) int {
-	id, err := _q.FirstID(ctx)
+func (sjq *SyncJobQuery) FirstIDX(ctx context.Context) int {
+	id, err := sjq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -131,8 +131,8 @@ func (_q *SyncJobQuery) FirstIDX(ctx context.Context) int {
 // Only returns a single SyncJob entity found by the query, ensuring it only returns one.
 // Returns a *NotSingularError when more than one SyncJob entity is found.
 // Returns a *NotFoundError when no SyncJob entities are found.
-func (_q *SyncJobQuery) Only(ctx context.Context) (*SyncJob, error) {
-	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
+func (sjq *SyncJobQuery) Only(ctx context.Context) (*SyncJob, error) {
+	nodes, err := sjq.Limit(2).All(setContextOp(ctx, sjq.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -147,8 +147,8 @@ func (_q *SyncJobQuery) Only(ctx context.Context) (*SyncJob, error) {
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (_q *SyncJobQuery) OnlyX(ctx context.Context) *SyncJob {
-	node, err := _q.Only(ctx)
+func (sjq *SyncJobQuery) OnlyX(ctx context.Context) *SyncJob {
+	node, err := sjq.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -158,9 +158,9 @@ func (_q *SyncJobQuery) OnlyX(ctx context.Context) *SyncJob {
 // OnlyID is like Only, but returns the only SyncJob ID in the query.
 // Returns a *NotSingularError when more than one SyncJob ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (_q *SyncJobQuery) OnlyID(ctx context.Context) (id int, err error) {
+func (sjq *SyncJobQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
+	if ids, err = sjq.Limit(2).IDs(setContextOp(ctx, sjq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -175,8 +175,8 @@ func (_q *SyncJobQuery) OnlyID(ctx context.Context) (id int, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (_q *SyncJobQuery) OnlyIDX(ctx context.Context) int {
-	id, err := _q.OnlyID(ctx)
+func (sjq *SyncJobQuery) OnlyIDX(ctx context.Context) int {
+	id, err := sjq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -184,18 +184,18 @@ func (_q *SyncJobQuery) OnlyIDX(ctx context.Context) int {
 }
 
 // All executes the query and returns a list of SyncJobs.
-func (_q *SyncJobQuery) All(ctx context.Context) ([]*SyncJob, error) {
-	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
-	if err := _q.prepareQuery(ctx); err != nil {
+func (sjq *SyncJobQuery) All(ctx context.Context) ([]*SyncJob, error) {
+	ctx = setContextOp(ctx, sjq.ctx, ent.OpQueryAll)
+	if err := sjq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
 	qr := querierAll[[]*SyncJob, *SyncJobQuery]()
-	return withInterceptors[[]*SyncJob](ctx, _q, qr, _q.inters)
+	return withInterceptors[[]*SyncJob](ctx, sjq, qr, sjq.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (_q *SyncJobQuery) AllX(ctx context.Context) []*SyncJob {
-	nodes, err := _q.All(ctx)
+func (sjq *SyncJobQuery) AllX(ctx context.Context) []*SyncJob {
+	nodes, err := sjq.All(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -203,20 +203,20 @@ func (_q *SyncJobQuery) AllX(ctx context.Context) []*SyncJob {
 }
 
 // IDs executes the query and returns a list of SyncJob IDs.
-func (_q *SyncJobQuery) IDs(ctx context.Context) (ids []int, err error) {
-	if _q.ctx.Unique == nil && _q.path != nil {
-		_q.Unique(true)
+func (sjq *SyncJobQuery) IDs(ctx context.Context) (ids []int, err error) {
+	if sjq.ctx.Unique == nil && sjq.path != nil {
+		sjq.Unique(true)
 	}
-	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
-	if err = _q.Select(syncjob.FieldID).Scan(ctx, &ids); err != nil {
+	ctx = setContextOp(ctx, sjq.ctx, ent.OpQueryIDs)
+	if err = sjq.Select(syncjob.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (_q *SyncJobQuery) IDsX(ctx context.Context) []int {
-	ids, err := _q.IDs(ctx)
+func (sjq *SyncJobQuery) IDsX(ctx context.Context) []int {
+	ids, err := sjq.IDs(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -224,17 +224,17 @@ func (_q *SyncJobQuery) IDsX(ctx context.Context) []int {
 }
 
 // Count returns the count of the given query.
-func (_q *SyncJobQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
-	if err := _q.prepareQuery(ctx); err != nil {
+func (sjq *SyncJobQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, sjq.ctx, ent.OpQueryCount)
+	if err := sjq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, _q, querierCount[*SyncJobQuery](), _q.inters)
+	return withInterceptors[int](ctx, sjq, querierCount[*SyncJobQuery](), sjq.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (_q *SyncJobQuery) CountX(ctx context.Context) int {
-	count, err := _q.Count(ctx)
+func (sjq *SyncJobQuery) CountX(ctx context.Context) int {
+	count, err := sjq.Count(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -242,9 +242,9 @@ func (_q *SyncJobQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (_q *SyncJobQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
-	switch _, err := _q.FirstID(ctx); {
+func (sjq *SyncJobQuery) Exist(ctx context.Context) (bool, error) {
+	ctx = setContextOp(ctx, sjq.ctx, ent.OpQueryExist)
+	switch _, err := sjq.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -255,8 +255,8 @@ func (_q *SyncJobQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (_q *SyncJobQuery) ExistX(ctx context.Context) bool {
-	exist, err := _q.Exist(ctx)
+func (sjq *SyncJobQuery) ExistX(ctx context.Context) bool {
+	exist, err := sjq.Exist(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -265,32 +265,32 @@ func (_q *SyncJobQuery) ExistX(ctx context.Context) bool {
 
 // Clone returns a duplicate of the SyncJobQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (_q *SyncJobQuery) Clone() *SyncJobQuery {
-	if _q == nil {
+func (sjq *SyncJobQuery) Clone() *SyncJobQuery {
+	if sjq == nil {
 		return nil
 	}
 	return &SyncJobQuery{
-		config:      _q.config,
-		ctx:         _q.ctx.Clone(),
-		order:       append([]syncjob.OrderOption{}, _q.order...),
-		inters:      append([]Interceptor{}, _q.inters...),
-		predicates:  append([]predicate.SyncJob{}, _q.predicates...),
-		withStorage: _q.withStorage.Clone(),
+		config:      sjq.config,
+		ctx:         sjq.ctx.Clone(),
+		order:       append([]syncjob.OrderOption{}, sjq.order...),
+		inters:      append([]Interceptor{}, sjq.inters...),
+		predicates:  append([]predicate.SyncJob{}, sjq.predicates...),
+		withStorage: sjq.withStorage.Clone(),
 		// clone intermediate query.
-		sql:  _q.sql.Clone(),
-		path: _q.path,
+		sql:  sjq.sql.Clone(),
+		path: sjq.path,
 	}
 }
 
 // WithStorage tells the query-builder to eager-load the nodes that are connected to
 // the "storage" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *SyncJobQuery) WithStorage(opts ...func(*StorageQuery)) *SyncJobQuery {
-	query := (&StorageClient{config: _q.config}).Query()
+func (sjq *SyncJobQuery) WithStorage(opts ...func(*StorageQuery)) *SyncJobQuery {
+	query := (&StorageClient{config: sjq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withStorage = query
-	return _q
+	sjq.withStorage = query
+	return sjq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -307,10 +307,10 @@ func (_q *SyncJobQuery) WithStorage(opts ...func(*StorageQuery)) *SyncJobQuery {
 //		GroupBy(syncjob.FieldStatus).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (_q *SyncJobQuery) GroupBy(field string, fields ...string) *SyncJobGroupBy {
-	_q.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &SyncJobGroupBy{build: _q}
-	grbuild.flds = &_q.ctx.Fields
+func (sjq *SyncJobQuery) GroupBy(field string, fields ...string) *SyncJobGroupBy {
+	sjq.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &SyncJobGroupBy{build: sjq}
+	grbuild.flds = &sjq.ctx.Fields
 	grbuild.label = syncjob.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
@@ -328,55 +328,55 @@ func (_q *SyncJobQuery) GroupBy(field string, fields ...string) *SyncJobGroupBy 
 //	client.SyncJob.Query().
 //		Select(syncjob.FieldStatus).
 //		Scan(ctx, &v)
-func (_q *SyncJobQuery) Select(fields ...string) *SyncJobSelect {
-	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
-	sbuild := &SyncJobSelect{SyncJobQuery: _q}
+func (sjq *SyncJobQuery) Select(fields ...string) *SyncJobSelect {
+	sjq.ctx.Fields = append(sjq.ctx.Fields, fields...)
+	sbuild := &SyncJobSelect{SyncJobQuery: sjq}
 	sbuild.label = syncjob.Label
-	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
+	sbuild.flds, sbuild.scan = &sjq.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
 // Aggregate returns a SyncJobSelect configured with the given aggregations.
-func (_q *SyncJobQuery) Aggregate(fns ...AggregateFunc) *SyncJobSelect {
-	return _q.Select().Aggregate(fns...)
+func (sjq *SyncJobQuery) Aggregate(fns ...AggregateFunc) *SyncJobSelect {
+	return sjq.Select().Aggregate(fns...)
 }
 
-func (_q *SyncJobQuery) prepareQuery(ctx context.Context) error {
-	for _, inter := range _q.inters {
+func (sjq *SyncJobQuery) prepareQuery(ctx context.Context) error {
+	for _, inter := range sjq.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
 		}
 		if trv, ok := inter.(Traverser); ok {
-			if err := trv.Traverse(ctx, _q); err != nil {
+			if err := trv.Traverse(ctx, sjq); err != nil {
 				return err
 			}
 		}
 	}
-	for _, f := range _q.ctx.Fields {
+	for _, f := range sjq.ctx.Fields {
 		if !syncjob.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
-	if _q.path != nil {
-		prev, err := _q.path(ctx)
+	if sjq.path != nil {
+		prev, err := sjq.path(ctx)
 		if err != nil {
 			return err
 		}
-		_q.sql = prev
+		sjq.sql = prev
 	}
 	return nil
 }
 
-func (_q *SyncJobQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*SyncJob, error) {
+func (sjq *SyncJobQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*SyncJob, error) {
 	var (
 		nodes       = []*SyncJob{}
-		withFKs     = _q.withFKs
-		_spec       = _q.querySpec()
+		withFKs     = sjq.withFKs
+		_spec       = sjq.querySpec()
 		loadedTypes = [1]bool{
-			_q.withStorage != nil,
+			sjq.withStorage != nil,
 		}
 	)
-	if _q.withStorage != nil {
+	if sjq.withStorage != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -386,7 +386,7 @@ func (_q *SyncJobQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Sync
 		return (*SyncJob).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &SyncJob{config: _q.config}
+		node := &SyncJob{config: sjq.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
@@ -394,14 +394,14 @@ func (_q *SyncJobQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Sync
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
-	if err := sqlgraph.QueryNodes(ctx, _q.driver, _spec); err != nil {
+	if err := sqlgraph.QueryNodes(ctx, sjq.driver, _spec); err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := _q.withStorage; query != nil {
-		if err := _q.loadStorage(ctx, query, nodes, nil,
+	if query := sjq.withStorage; query != nil {
+		if err := sjq.loadStorage(ctx, query, nodes, nil,
 			func(n *SyncJob, e *Storage) { n.Edges.Storage = e }); err != nil {
 			return nil, err
 		}
@@ -409,7 +409,7 @@ func (_q *SyncJobQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Sync
 	return nodes, nil
 }
 
-func (_q *SyncJobQuery) loadStorage(ctx context.Context, query *StorageQuery, nodes []*SyncJob, init func(*SyncJob), assign func(*SyncJob, *Storage)) error {
+func (sjq *SyncJobQuery) loadStorage(ctx context.Context, query *StorageQuery, nodes []*SyncJob, init func(*SyncJob), assign func(*SyncJob, *Storage)) error {
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*SyncJob)
 	for i := range nodes {
@@ -442,24 +442,24 @@ func (_q *SyncJobQuery) loadStorage(ctx context.Context, query *StorageQuery, no
 	return nil
 }
 
-func (_q *SyncJobQuery) sqlCount(ctx context.Context) (int, error) {
-	_spec := _q.querySpec()
-	_spec.Node.Columns = _q.ctx.Fields
-	if len(_q.ctx.Fields) > 0 {
-		_spec.Unique = _q.ctx.Unique != nil && *_q.ctx.Unique
+func (sjq *SyncJobQuery) sqlCount(ctx context.Context) (int, error) {
+	_spec := sjq.querySpec()
+	_spec.Node.Columns = sjq.ctx.Fields
+	if len(sjq.ctx.Fields) > 0 {
+		_spec.Unique = sjq.ctx.Unique != nil && *sjq.ctx.Unique
 	}
-	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
+	return sqlgraph.CountNodes(ctx, sjq.driver, _spec)
 }
 
-func (_q *SyncJobQuery) querySpec() *sqlgraph.QuerySpec {
+func (sjq *SyncJobQuery) querySpec() *sqlgraph.QuerySpec {
 	_spec := sqlgraph.NewQuerySpec(syncjob.Table, syncjob.Columns, sqlgraph.NewFieldSpec(syncjob.FieldID, field.TypeInt))
-	_spec.From = _q.sql
-	if unique := _q.ctx.Unique; unique != nil {
+	_spec.From = sjq.sql
+	if unique := sjq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
-	} else if _q.path != nil {
+	} else if sjq.path != nil {
 		_spec.Unique = true
 	}
-	if fields := _q.ctx.Fields; len(fields) > 0 {
+	if fields := sjq.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, syncjob.FieldID)
 		for i := range fields {
@@ -468,20 +468,20 @@ func (_q *SyncJobQuery) querySpec() *sqlgraph.QuerySpec {
 			}
 		}
 	}
-	if ps := _q.predicates; len(ps) > 0 {
+	if ps := sjq.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if limit := _q.ctx.Limit; limit != nil {
+	if limit := sjq.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := _q.ctx.Offset; offset != nil {
+	if offset := sjq.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
-	if ps := _q.order; len(ps) > 0 {
+	if ps := sjq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -491,33 +491,33 @@ func (_q *SyncJobQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (_q *SyncJobQuery) sqlQuery(ctx context.Context) *sql.Selector {
-	builder := sql.Dialect(_q.driver.Dialect())
+func (sjq *SyncJobQuery) sqlQuery(ctx context.Context) *sql.Selector {
+	builder := sql.Dialect(sjq.driver.Dialect())
 	t1 := builder.Table(syncjob.Table)
-	columns := _q.ctx.Fields
+	columns := sjq.ctx.Fields
 	if len(columns) == 0 {
 		columns = syncjob.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
-	if _q.sql != nil {
-		selector = _q.sql
+	if sjq.sql != nil {
+		selector = sjq.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if _q.ctx.Unique != nil && *_q.ctx.Unique {
+	if sjq.ctx.Unique != nil && *sjq.ctx.Unique {
 		selector.Distinct()
 	}
-	for _, p := range _q.predicates {
+	for _, p := range sjq.predicates {
 		p(selector)
 	}
-	for _, p := range _q.order {
+	for _, p := range sjq.order {
 		p(selector)
 	}
-	if offset := _q.ctx.Offset; offset != nil {
+	if offset := sjq.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := _q.ctx.Limit; limit != nil {
+	if limit := sjq.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -530,41 +530,41 @@ type SyncJobGroupBy struct {
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (_g *SyncJobGroupBy) Aggregate(fns ...AggregateFunc) *SyncJobGroupBy {
-	_g.fns = append(_g.fns, fns...)
-	return _g
+func (sjgb *SyncJobGroupBy) Aggregate(fns ...AggregateFunc) *SyncJobGroupBy {
+	sjgb.fns = append(sjgb.fns, fns...)
+	return sjgb
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_g *SyncJobGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
-	if err := _g.build.prepareQuery(ctx); err != nil {
+func (sjgb *SyncJobGroupBy) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, sjgb.build.ctx, ent.OpQueryGroupBy)
+	if err := sjgb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*SyncJobQuery, *SyncJobGroupBy](ctx, _g.build, _g, _g.build.inters, v)
+	return scanWithInterceptors[*SyncJobQuery, *SyncJobGroupBy](ctx, sjgb.build, sjgb, sjgb.build.inters, v)
 }
 
-func (_g *SyncJobGroupBy) sqlScan(ctx context.Context, root *SyncJobQuery, v any) error {
+func (sjgb *SyncJobGroupBy) sqlScan(ctx context.Context, root *SyncJobQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
-	aggregation := make([]string, 0, len(_g.fns))
-	for _, fn := range _g.fns {
+	aggregation := make([]string, 0, len(sjgb.fns))
+	for _, fn := range sjgb.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
 	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(*_g.flds)+len(_g.fns))
-		for _, f := range *_g.flds {
+		columns := make([]string, 0, len(*sjgb.flds)+len(sjgb.fns))
+		for _, f := range *sjgb.flds {
 			columns = append(columns, selector.C(f))
 		}
 		columns = append(columns, aggregation...)
 		selector.Select(columns...)
 	}
-	selector.GroupBy(selector.Columns(*_g.flds...)...)
+	selector.GroupBy(selector.Columns(*sjgb.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := _g.build.driver.Query(ctx, query, args, rows); err != nil {
+	if err := sjgb.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -578,27 +578,27 @@ type SyncJobSelect struct {
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (_s *SyncJobSelect) Aggregate(fns ...AggregateFunc) *SyncJobSelect {
-	_s.fns = append(_s.fns, fns...)
-	return _s
+func (sjs *SyncJobSelect) Aggregate(fns ...AggregateFunc) *SyncJobSelect {
+	sjs.fns = append(sjs.fns, fns...)
+	return sjs
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_s *SyncJobSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
-	if err := _s.prepareQuery(ctx); err != nil {
+func (sjs *SyncJobSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, sjs.ctx, ent.OpQuerySelect)
+	if err := sjs.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*SyncJobQuery, *SyncJobSelect](ctx, _s.SyncJobQuery, _s, _s.inters, v)
+	return scanWithInterceptors[*SyncJobQuery, *SyncJobSelect](ctx, sjs.SyncJobQuery, sjs, sjs.inters, v)
 }
 
-func (_s *SyncJobSelect) sqlScan(ctx context.Context, root *SyncJobQuery, v any) error {
+func (sjs *SyncJobSelect) sqlScan(ctx context.Context, root *SyncJobQuery, v any) error {
 	selector := root.sqlQuery(ctx)
-	aggregation := make([]string, 0, len(_s.fns))
-	for _, fn := range _s.fns {
+	aggregation := make([]string, 0, len(sjs.fns))
+	for _, fn := range sjs.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	switch n := len(*_s.selector.flds); {
+	switch n := len(*sjs.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
 		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
@@ -606,7 +606,7 @@ func (_s *SyncJobSelect) sqlScan(ctx context.Context, root *SyncJobQuery, v any)
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := _s.driver.Query(ctx, query, args, rows); err != nil {
+	if err := sjs.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()

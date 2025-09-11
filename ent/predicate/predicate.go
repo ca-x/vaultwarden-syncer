@@ -6,6 +6,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// S3Config is the predicate function for s3config builders.
+type S3Config func(*sql.Selector)
+
 // Storage is the predicate function for storage builders.
 type Storage func(*sql.Selector)
 
@@ -14,3 +17,6 @@ type SyncJob func(*sql.Selector)
 
 // User is the predicate function for user builders.
 type User func(*sql.Selector)
+
+// WebDAVConfig is the predicate function for webdavconfig builders.
+type WebDAVConfig func(*sql.Selector)

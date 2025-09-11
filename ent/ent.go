@@ -12,9 +12,11 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/ca-x/vaultwarden-syncer/ent/s3config"
 	"github.com/ca-x/vaultwarden-syncer/ent/storage"
 	"github.com/ca-x/vaultwarden-syncer/ent/syncjob"
 	"github.com/ca-x/vaultwarden-syncer/ent/user"
+	"github.com/ca-x/vaultwarden-syncer/ent/webdavconfig"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -72,15 +74,17 @@ var (
 )
 
 // checkColumn checks if the column exists in the given table.
-func checkColumn(t, c string) error {
+func checkColumn(table, column string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			storage.Table: storage.ValidColumn,
-			syncjob.Table: syncjob.ValidColumn,
-			user.Table:    user.ValidColumn,
+			s3config.Table:     s3config.ValidColumn,
+			storage.Table:      storage.ValidColumn,
+			syncjob.Table:      syncjob.ValidColumn,
+			user.Table:         user.ValidColumn,
+			webdavconfig.Table: webdavconfig.ValidColumn,
 		})
 	})
-	return columnCheck(t, c)
+	return columnCheck(table, column)
 }
 
 // Asc applies the given fields in ASC order.

@@ -1,80 +1,80 @@
-<h1><iconify-icon icon="mdi:database" class="icon-large icon-purple"></iconify-icon>{{call .T "storage.title"}}</h1>
+<h1><iconify-icon icon="mdi:database" class="icon-large icon-purple"></iconify-icon>{{call .T "storage.edit"}}</h1>
 
 <div class="grid grid-2">
     <section class="glass-card card">
-        <h2><iconify-icon icon="mdi:plus-circle" class="icon-success"></iconify-icon>{{call .T "common.add"}}</h2>
-        <form id="storage-form" hx-post="/api/storage" hx-target="#result">
+        <h2><iconify-icon icon="mdi:pencil" class="icon-warning"></iconify-icon>{{call .T "storage.edit"}}</h2>
+        <form id="storage-edit-form" hx-put="/api/storage/{{.Storage.ID}}" hx-target="#result">
+            <input type="hidden" name="id" value="{{.Storage.ID}}">
+            
             <div class="form-group">
                 <label for="storage_name">{{call .T "storage.name"}}</label>
-                <input type="text" id="storage_name" name="name" placeholder="{{call .T "storage.name_placeholder"}}" required>
+                <input type="text" id="storage_name" name="name" placeholder="{{call .T "storage.name_placeholder"}}" value="{{.Storage.Name}}" required>
             </div>
             
             <div class="form-group">
                 <label for="storage_type">{{call .T "common.type"}}</label>
-                <select id="storage_type" name="type" required>
-                    <option value="">{{call .T "storage.select_type"}}</option>
-                    <option value="webdav">WebDAV</option>
-                    <option value="s3">S3</option>
+                <select id="storage_type" name="type" required disabled>
+                    <option value="webdav" {{if eq .Storage.Type "webdav"}}selected{{end}}>WebDAV</option>
+                    <option value="s3" {{if eq .Storage.Type "s3"}}selected{{end}}>S3</option>
                 </select>
+                <small>{{call .T "storage.type_change_note"}}</small>
             </div>
             
             <!-- WebDAV specific fields -->
-            <div id="webdav-fields" class="storage-type-fields" style="display: none;">
+            <div id="webdav-fields" class="storage-type-fields" {{if ne .Storage.Type "webdav"}}style="display: none;"{{end}}>
                 <div class="form-group">
                     <label for="webdav_url">{{call .T "storage.webdav.url"}}</label>
-                    <input type="url" id="webdav_url" name="webdav_url" placeholder="{{call .T "storage.webdav.url_placeholder"}}">
+                    <input type="url" id="webdav_url" name="webdav_url" placeholder="{{call .T "storage.webdav.url_placeholder"}}" value="{{.Config.url}}">
                 </div>
                 <div class="form-group">
                     <label for="webdav_username">{{call .T "auth.username"}}</label>
-                    <input type="text" id="webdav_username" name="webdav_username" placeholder="{{call .T "auth.username"}}">
+                    <input type="text" id="webdav_username" name="webdav_username" placeholder="{{call .T "auth.username"}}" value="{{.Config.username}}">
                 </div>
                 <div class="form-group">
                     <label for="webdav_password">{{call .T "auth.password"}}</label>
-                    <input type="password" id="webdav_password" name="webdav_password" placeholder="{{call .T "auth.password"}}">
+                    <input type="password" id="webdav_password" name="webdav_password" placeholder="{{call .T "auth.password"}}" value="">
+                    <small>{{call .T "storage.password_change_note"}}</small>
                 </div>
             </div>
             
             <!-- S3 specific fields -->
-            <div id="s3-fields" class="storage-type-fields" style="display: none;">
+            <div id="s3-fields" class="storage-type-fields" {{if ne .Storage.Type "s3"}}style="display: none;"{{end}}>
                 <div class="form-group">
                     <label for="s3_endpoint">{{call .T "storage.s3.endpoint"}}</label>
-                    <input type="text" id="s3_endpoint" name="s3_endpoint" placeholder="{{call .T "storage.s3.endpoint_placeholder"}}">
+                    <input type="text" id="s3_endpoint" name="s3_endpoint" placeholder="{{call .T "storage.s3.endpoint_placeholder"}}" value="{{.Config.endpoint}}">
                     <small>{{call .T "storage.s3.endpoint_hint"}}</small>
                 </div>
                 <div class="form-group">
                     <label for="s3_access_key_id">{{call .T "storage.s3.access_key_id"}}</label>
-                    <input type="text" id="s3_access_key_id" name="s3_access_key_id" placeholder="{{call .T "storage.s3.access_key_id"}}">
+                    <input type="text" id="s3_access_key_id" name="s3_access_key_id" placeholder="{{call .T "storage.s3.access_key_id"}}" value="{{.Config.access_key_id}}">
                 </div>
                 <div class="form-group">
                     <label for="s3_secret_access_key">{{call .T "storage.s3.secret_access_key"}}</label>
-                    <input type="password" id="s3_secret_access_key" name="s3_secret_access_key" placeholder="{{call .T "storage.s3.secret_access_key"}}">
+                    <input type="password" id="s3_secret_access_key" name="s3_secret_access_key" placeholder="{{call .T "storage.s3.secret_access_key"}}" value="">
+                    <small>{{call .T "storage.password_change_note"}}</small>
                 </div>
                 <div class="form-group">
                     <label for="s3_region">{{call .T "storage.s3.region"}}</label>
-                    <input type="text" id="s3_region" name="s3_region" placeholder="{{call .T "storage.s3.region_placeholder"}}">
+                    <input type="text" id="s3_region" name="s3_region" placeholder="{{call .T "storage.s3.region_placeholder"}}" value="{{.Config.region}}">
                 </div>
                 <div class="form-group">
                     <label for="s3_bucket">{{call .T "storage.s3.bucket"}}</label>
-                    <input type="text" id="s3_bucket" name="s3_bucket" placeholder="{{call .T "storage.s3.bucket_placeholder"}}">
+                    <input type="text" id="s3_bucket" name="s3_bucket" placeholder="{{call .T "storage.s3.bucket_placeholder"}}" value="{{.Config.bucket}}">
                 </div>
             </div>
             
             <div class="form-group">
                 <label>
-                    <input type="checkbox" id="storage_enabled" name="enabled" checked>
+                    <input type="checkbox" id="storage_enabled" name="enabled" {{if .Storage.Enabled}}checked{{end}}>
                     {{call .T "storage.enabled"}}
                 </label>
             </div>
             
-            <button type="submit" class="btn btn-success btn-full">{{call .T "common.add"}}</button>
+            <div class="button-group">
+                <button type="submit" class="btn btn-success">{{call .T "common.save"}}</button>
+                <button type="button" class="btn btn-outline" hx-get="/storage" hx-target="body">{{call .T "common.cancel"}}</button>
+            </div>
         </form>
-    </section>
-    
-    <section class="glass-card card">
-        <h2><iconify-icon icon="mdi:format-list-bulleted" class="icon-info"></iconify-icon>{{call .T "storage.existing"}}</h2>
-        <div id="storage-list">
-            {{.StorageCards}}
-        </div>
     </section>
 </div>
 
@@ -98,7 +98,7 @@ document.getElementById('storage_type').addEventListener('change', function() {
 });
 
 // Handle form submission
-document.getElementById('storage-form').addEventListener('submit', function(e) {
+document.getElementById('storage-edit-form').addEventListener('submit', function(e) {
     e.preventDefault();
     
     // Get form data
@@ -118,9 +118,6 @@ document.getElementById('storage-form').addEventListener('submit', function(e) {
             isValid = false;
             alert('Please fill in all required S3 fields');
         }
-    } else if (!type) {
-        isValid = false;
-        alert('Please select a storage type');
     }
     
     // If validation failed, stop submission

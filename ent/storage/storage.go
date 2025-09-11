@@ -19,8 +19,6 @@ const (
 	FieldName = "name"
 	// FieldType holds the string denoting the type field in the database.
 	FieldType = "type"
-	// FieldConfig holds the string denoting the config field in the database.
-	FieldConfig = "config"
 	// FieldEnabled holds the string denoting the enabled field in the database.
 	FieldEnabled = "enabled"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -29,6 +27,10 @@ const (
 	FieldUpdatedAt = "updated_at"
 	// EdgeSyncJobs holds the string denoting the sync_jobs edge name in mutations.
 	EdgeSyncJobs = "sync_jobs"
+	// EdgeWebdavConfig holds the string denoting the webdav_config edge name in mutations.
+	EdgeWebdavConfig = "webdav_config"
+	// EdgeS3Config holds the string denoting the s3_config edge name in mutations.
+	EdgeS3Config = "s3_config"
 	// Table holds the table name of the storage in the database.
 	Table = "storages"
 	// SyncJobsTable is the table that holds the sync_jobs relation/edge.
@@ -38,6 +40,20 @@ const (
 	SyncJobsInverseTable = "sync_jobs"
 	// SyncJobsColumn is the table column denoting the sync_jobs relation/edge.
 	SyncJobsColumn = "storage_sync_jobs"
+	// WebdavConfigTable is the table that holds the webdav_config relation/edge.
+	WebdavConfigTable = "web_dav_configs"
+	// WebdavConfigInverseTable is the table name for the WebDAVConfig entity.
+	// It exists in this package in order to avoid circular dependency with the "webdavconfig" package.
+	WebdavConfigInverseTable = "web_dav_configs"
+	// WebdavConfigColumn is the table column denoting the webdav_config relation/edge.
+	WebdavConfigColumn = "storage_webdav_config"
+	// S3ConfigTable is the table that holds the s3_config relation/edge.
+	S3ConfigTable = "s3configs"
+	// S3ConfigInverseTable is the table name for the S3Config entity.
+	// It exists in this package in order to avoid circular dependency with the "s3config" package.
+	S3ConfigInverseTable = "s3configs"
+	// S3ConfigColumn is the table column denoting the s3_config relation/edge.
+	S3ConfigColumn = "storage_s3_config"
 )
 
 // Columns holds all SQL columns for storage fields.
@@ -45,7 +61,6 @@ var Columns = []string{
 	FieldID,
 	FieldName,
 	FieldType,
-	FieldConfig,
 	FieldEnabled,
 	FieldCreatedAt,
 	FieldUpdatedAt,
@@ -141,10 +156,38 @@ func BySyncJobs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newSyncJobsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByWebdavConfigField orders the results by webdav_config field.
+func ByWebdavConfigField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newWebdavConfigStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByS3ConfigField orders the results by s3_config field.
+func ByS3ConfigField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newS3ConfigStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newSyncJobsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(SyncJobsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, SyncJobsTable, SyncJobsColumn),
+	)
+}
+func newWebdavConfigStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(WebdavConfigInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, WebdavConfigTable, WebdavConfigColumn),
+	)
+}
+func newS3ConfigStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(S3ConfigInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, S3ConfigTable, S3ConfigColumn),
 	)
 }

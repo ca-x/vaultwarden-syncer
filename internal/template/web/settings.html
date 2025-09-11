@@ -4,7 +4,7 @@
 
 <div class="grid grid-2">
     <section class="glass-card card">
-        <h2><iconify-icon icon="mdi:shield-lock" class="icon-danger"></iconify-icon>{{call .T "settings.security"}}</h2>
+        <h2 class="section-title"><iconify-icon icon="mdi:shield-lock" class="icon-danger"></iconify-icon>{{call .T "settings.security"}}</h2>
         <form>
             <div class="form-group">
                 <label for="jwt_secret">{{call .T "settings.jwt_secret"}}</label>
@@ -15,59 +15,93 @@
     </section>
     
     <section class="glass-card card">
-        <h2><iconify-icon icon="mdi:calendar-clock" class="icon-info"></iconify-icon>{{call .T "settings.sync_schedule"}}</h2>
-        <form>
+        <h2 class="section-title"><iconify-icon icon="mdi:calendar-clock" class="icon-info"></iconify-icon>{{call .T "settings.sync_schedule"}}</h2>
+        <form id="sync-schedule-form">
             <div class="form-group">
                 <label for="sync_interval">{{call .T "settings.sync_interval"}}</label>
                 <select id="sync_interval">
-                    <option value="5">5 {{call .T "time.minutes" 5}}</option>
-                    <option value="15">15 {{call .T "time.minutes" 15}}</option>
-                    <option value="30">30 {{call .T "time.minutes" 30}}</option>
+                    <option value="5">{{call .T "time.minutes" 5}}</option>
+                    <option value="15">{{call .T "time.minutes" 15}}</option>
+                    <option value="30">{{call .T "time.minutes" 30}}</option>
                     <option value="60" selected>{{call .T "time.hour"}}</option>
-                    <option value="120">2 {{call .T "time.hours" 2}}</option>
-                    <option value="360">6 {{call .T "time.hours" 6}}</option>
-                    <option value="720">12 {{call .T "time.hours" 12}}</option>
-                    <option value="1440">24 {{call .T "time.hours" 24}}</option>
+                    <option value="120">{{call .T "time.hours" 2}}</option>
+                    <option value="360">{{call .T "time.hours" 6}}</option>
+                    <option value="720">{{call .T "time.hours" 12}}</option>
+                    <option value="1440">{{call .T "time.hours" 24}}</option>
                 </select>
             </div>
             <button type="submit" class="btn btn-primary">{{call .T "settings.update_schedule"}}</button>
         </form>
-    </section>
-    
-    <section class="glass-card card">
-        <h2><iconify-icon icon="mdi:database-cog" class="icon-purple"></iconify-icon>{{call .T "settings.database"}}</h2>
-        <p><strong>{{call .T "common.type"}}:</strong> SQLite</p>
-        <p><strong>{{call .T "common.location"}}:</strong> ./data/syncer.db</p>
-        <p><strong>{{call .T "common.size"}}:</strong> 2.1 MB</p>
-        <div style="margin-top: 1rem;">
-            <button class="btn btn-outline" style="margin-right: 0.5rem;">{{call .T "settings.backup_database"}}</button>
-            <button class="btn btn-danger">{{call .T "settings.reset_database"}}</button>
+        
+        <!-- 添加手动同步功能 -->
+        <div style="margin-top: 1.5rem;">
+            <h3><iconify-icon icon="mdi:sync" class="icon-info"></iconify-icon>{{call .T "storage.sync_now"}}</h3>
+            <button id="manual-sync-btn" class="btn btn-primary">
+                <iconify-icon icon="mdi:sync"></iconify-icon>{{call .T "storage.sync_now"}}
+            </button>
+            <div id="sync-result" style="margin-top: 1rem;"></div>
         </div>
     </section>
     
     <section class="glass-card card">
-        <h2><iconify-icon icon="mdi:information" class="icon-success"></iconify-icon>{{call .T "settings.system_info"}}</h2>
+        <h2 class="section-title"><iconify-icon icon="mdi:database-cog" class="icon-purple"></iconify-icon>{{call .T "settings.database"}}</h2>
+        <p><strong>{{call .T "common.type"}}:</strong> SQLite</p>
+        <p><strong>{{call .T "common.location"}}:</strong> ./data/syncer.db</p>
+        <p><strong>{{call .T "common.size"}}:</strong> 2.1 MB</p>
+        <div class="button-group">
+            <button class="btn btn-outline">{{call .T "settings.backup_database"}}</button>
+            <button class="btn btn-danger" id="resetDatabaseBtn">{{call .T "settings.reset_database"}}</button>
+        </div>
+        <small class="help-text">
+            {{call .T "settings.reset_database_help"}}
+        </small>
+    </section>
+    
+    <section class="glass-card card">
+        <h2 class="section-title"><iconify-icon icon="mdi:information" class="icon-success"></iconify-icon>{{call .T "settings.system_info"}}</h2>
         <p><strong>{{call .T "settings.version"}}:</strong> v1.0.0</p>
         <p><strong>{{call .T "settings.build"}}:</strong> 2025-09-11</p>
         <p><strong>Go {{call .T "settings.go_version"}}:</strong> go1.21</p>
         <p><strong>{{call .T "settings.uptime"}}:</strong> 2h 15m</p>
-        <div style="margin-top: 1rem;">
-            <button class="btn btn-outline">{{call .T "settings.download_logs"}}</button>
+        <div class="button-group">
+            <a href="/api/logs/download" class="btn btn-outline">{{call .T "settings.download_logs"}}</a>
         </div>
     </section>
     
     <section class="glass-card card">
-        <h2><iconify-icon icon="mdi:history" class="icon-info"></iconify-icon>{{call .T "settings.sync_history"}}</h2>
+        <h2 class="section-title"><iconify-icon icon="mdi:history" class="icon-info"></iconify-icon>{{call .T "settings.sync_history"}}</h2>
         <div id="sync-stats">
             <p>{{call .T "settings.loading_stats"}}</p>
         </div>
-        <div style="margin-top: 1rem;">
-            <button hx-post="/api/cleanup" hx-target="#cleanup-result" class="btn btn-outline" style="margin-right: 0.5rem;">
+        <div class="button-group">
+            <button hx-post="/api/cleanup" hx-target="#cleanup-result" class="btn btn-outline">
                 <iconify-icon icon="mdi:broom"></iconify-icon>{{call .T "settings.cleanup_history"}}
             </button>
         </div>
         <div id="cleanup-result" style="margin-top: 1rem;"></div>
     </section>
+</div>
+
+<!-- 手动同步弹出框 -->
+<div id="sync-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>{{call .T "storage.select_storage"}}</h3>
+            <button class="modal-close" onclick="closeSyncModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>{{call .T "storage.select_storage"}}</label>
+                <select id="sync-storage-select" multiple size="5" style="width: 100%;">
+                    <option value="0">{{call .T "storage.all_enabled"}}</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeSyncModal()">{{call .T "common.cancel"}}</button>
+            <button class="btn btn-primary" onclick="triggerManualSync()">{{call .T "common.sync"}}</button>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -111,6 +145,108 @@ function loadSyncStats() {
         });
 }
 
-// Load stats on page load
-document.addEventListener('DOMContentLoaded', loadSyncStats);
+// Load storage options for manual sync
+function loadStorageOptions() {
+    fetch('/api/storages')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('sync-storage-select');
+            // Clear existing options except "all"
+            select.innerHTML = '<option value="0">{{call .T "storage.all_enabled"}}</option>';
+            
+            // Add storage options
+            data.forEach(storage => {
+                const option = document.createElement('option');
+                option.value = storage.id;
+                option.textContent = storage.name + ' (' + storage.type.toUpperCase() + ')';
+                select.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Failed to load storage options:', error);
+        });
+}
+
+// Open sync modal
+function openSyncModal() {
+    loadStorageOptions();
+    document.getElementById('sync-modal').style.display = 'block';
+}
+
+// Close sync modal
+function closeSyncModal() {
+    document.getElementById('sync-modal').style.display = 'none';
+}
+
+// Trigger manual sync
+function triggerManualSync() {
+    const selectedOptions = Array.from(document.getElementById('sync-storage-select').selectedOptions);
+    const selectedStorages = selectedOptions.map(option => parseInt(option.value));
+    
+    // Send request to trigger manual sync
+    fetch('/api/sync-manual', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            storage_ids: selectedStorages
+        })
+    })
+    .then(response => response.text())
+    .then(html => {
+        document.getElementById('sync-result').innerHTML = html;
+        closeSyncModal();
+    })
+    .catch(error => {
+        console.error('Failed to trigger manual sync:', error);
+        document.getElementById('sync-result').innerHTML = 
+            '<div class="result error">Failed to trigger manual sync</div>';
+        closeSyncModal();
+    });
+}
+
+// Add confirmation for reset database button
+document.addEventListener('DOMContentLoaded', function() {
+    loadSyncStats();
+    
+    // Handle sync schedule form submission
+    const scheduleForm = document.getElementById('sync-schedule-form');
+    if (scheduleForm) {
+        scheduleForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const interval = document.getElementById('sync_interval').value;
+            // TODO: Implement schedule update functionality
+            alert('Sync schedule update functionality not implemented yet. Interval: ' + interval + ' minutes');
+        });
+    }
+    
+    // Handle manual sync button
+    const manualSyncBtn = document.getElementById('manual-sync-btn');
+    if (manualSyncBtn) {
+        manualSyncBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            openSyncModal();
+        });
+    }
+    
+    const resetBtn = document.getElementById('resetDatabaseBtn');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (confirm('{{call .T "settings.reset_database_confirm"}}')) {
+                // TODO: Implement reset database functionality
+                alert('{{call .T "settings.reset_database_not_implemented"}}');
+            }
+        });
+    }
+    
+    // Close modal when clicking outside
+    window.addEventListener('click', function(event) {
+        const modal = document.getElementById('sync-modal');
+        if (event.target === modal) {
+            closeSyncModal();
+        }
+    });
+});
 </script>

@@ -12,8 +12,10 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/ca-x/vaultwarden-syncer/ent/predicate"
+	"github.com/ca-x/vaultwarden-syncer/ent/s3config"
 	"github.com/ca-x/vaultwarden-syncer/ent/storage"
 	"github.com/ca-x/vaultwarden-syncer/ent/syncjob"
+	"github.com/ca-x/vaultwarden-syncer/ent/webdavconfig"
 )
 
 // StorageUpdate is the builder for updating Storage entities.
@@ -24,129 +26,173 @@ type StorageUpdate struct {
 }
 
 // Where appends a list predicates to the StorageUpdate builder.
-func (_u *StorageUpdate) Where(ps ...predicate.Storage) *StorageUpdate {
-	_u.mutation.Where(ps...)
-	return _u
+func (su *StorageUpdate) Where(ps ...predicate.Storage) *StorageUpdate {
+	su.mutation.Where(ps...)
+	return su
 }
 
 // SetName sets the "name" field.
-func (_u *StorageUpdate) SetName(v string) *StorageUpdate {
-	_u.mutation.SetName(v)
-	return _u
+func (su *StorageUpdate) SetName(s string) *StorageUpdate {
+	su.mutation.SetName(s)
+	return su
 }
 
 // SetNillableName sets the "name" field if the given value is not nil.
-func (_u *StorageUpdate) SetNillableName(v *string) *StorageUpdate {
-	if v != nil {
-		_u.SetName(*v)
+func (su *StorageUpdate) SetNillableName(s *string) *StorageUpdate {
+	if s != nil {
+		su.SetName(*s)
 	}
-	return _u
+	return su
 }
 
 // SetType sets the "type" field.
-func (_u *StorageUpdate) SetType(v storage.Type) *StorageUpdate {
-	_u.mutation.SetType(v)
-	return _u
+func (su *StorageUpdate) SetType(s storage.Type) *StorageUpdate {
+	su.mutation.SetType(s)
+	return su
 }
 
 // SetNillableType sets the "type" field if the given value is not nil.
-func (_u *StorageUpdate) SetNillableType(v *storage.Type) *StorageUpdate {
-	if v != nil {
-		_u.SetType(*v)
+func (su *StorageUpdate) SetNillableType(s *storage.Type) *StorageUpdate {
+	if s != nil {
+		su.SetType(*s)
 	}
-	return _u
-}
-
-// SetConfig sets the "config" field.
-func (_u *StorageUpdate) SetConfig(v map[string]interface{}) *StorageUpdate {
-	_u.mutation.SetConfig(v)
-	return _u
+	return su
 }
 
 // SetEnabled sets the "enabled" field.
-func (_u *StorageUpdate) SetEnabled(v bool) *StorageUpdate {
-	_u.mutation.SetEnabled(v)
-	return _u
+func (su *StorageUpdate) SetEnabled(b bool) *StorageUpdate {
+	su.mutation.SetEnabled(b)
+	return su
 }
 
 // SetNillableEnabled sets the "enabled" field if the given value is not nil.
-func (_u *StorageUpdate) SetNillableEnabled(v *bool) *StorageUpdate {
-	if v != nil {
-		_u.SetEnabled(*v)
+func (su *StorageUpdate) SetNillableEnabled(b *bool) *StorageUpdate {
+	if b != nil {
+		su.SetEnabled(*b)
 	}
-	return _u
+	return su
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (_u *StorageUpdate) SetCreatedAt(v time.Time) *StorageUpdate {
-	_u.mutation.SetCreatedAt(v)
-	return _u
+func (su *StorageUpdate) SetCreatedAt(t time.Time) *StorageUpdate {
+	su.mutation.SetCreatedAt(t)
+	return su
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (_u *StorageUpdate) SetNillableCreatedAt(v *time.Time) *StorageUpdate {
-	if v != nil {
-		_u.SetCreatedAt(*v)
+func (su *StorageUpdate) SetNillableCreatedAt(t *time.Time) *StorageUpdate {
+	if t != nil {
+		su.SetCreatedAt(*t)
 	}
-	return _u
+	return su
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (_u *StorageUpdate) SetUpdatedAt(v time.Time) *StorageUpdate {
-	_u.mutation.SetUpdatedAt(v)
-	return _u
+func (su *StorageUpdate) SetUpdatedAt(t time.Time) *StorageUpdate {
+	su.mutation.SetUpdatedAt(t)
+	return su
 }
 
 // AddSyncJobIDs adds the "sync_jobs" edge to the SyncJob entity by IDs.
-func (_u *StorageUpdate) AddSyncJobIDs(ids ...int) *StorageUpdate {
-	_u.mutation.AddSyncJobIDs(ids...)
-	return _u
+func (su *StorageUpdate) AddSyncJobIDs(ids ...int) *StorageUpdate {
+	su.mutation.AddSyncJobIDs(ids...)
+	return su
 }
 
 // AddSyncJobs adds the "sync_jobs" edges to the SyncJob entity.
-func (_u *StorageUpdate) AddSyncJobs(v ...*SyncJob) *StorageUpdate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
+func (su *StorageUpdate) AddSyncJobs(s ...*SyncJob) *StorageUpdate {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
 	}
-	return _u.AddSyncJobIDs(ids...)
+	return su.AddSyncJobIDs(ids...)
+}
+
+// SetWebdavConfigID sets the "webdav_config" edge to the WebDAVConfig entity by ID.
+func (su *StorageUpdate) SetWebdavConfigID(id int) *StorageUpdate {
+	su.mutation.SetWebdavConfigID(id)
+	return su
+}
+
+// SetNillableWebdavConfigID sets the "webdav_config" edge to the WebDAVConfig entity by ID if the given value is not nil.
+func (su *StorageUpdate) SetNillableWebdavConfigID(id *int) *StorageUpdate {
+	if id != nil {
+		su = su.SetWebdavConfigID(*id)
+	}
+	return su
+}
+
+// SetWebdavConfig sets the "webdav_config" edge to the WebDAVConfig entity.
+func (su *StorageUpdate) SetWebdavConfig(w *WebDAVConfig) *StorageUpdate {
+	return su.SetWebdavConfigID(w.ID)
+}
+
+// SetS3ConfigID sets the "s3_config" edge to the S3Config entity by ID.
+func (su *StorageUpdate) SetS3ConfigID(id int) *StorageUpdate {
+	su.mutation.SetS3ConfigID(id)
+	return su
+}
+
+// SetNillableS3ConfigID sets the "s3_config" edge to the S3Config entity by ID if the given value is not nil.
+func (su *StorageUpdate) SetNillableS3ConfigID(id *int) *StorageUpdate {
+	if id != nil {
+		su = su.SetS3ConfigID(*id)
+	}
+	return su
+}
+
+// SetS3Config sets the "s3_config" edge to the S3Config entity.
+func (su *StorageUpdate) SetS3Config(s *S3Config) *StorageUpdate {
+	return su.SetS3ConfigID(s.ID)
 }
 
 // Mutation returns the StorageMutation object of the builder.
-func (_u *StorageUpdate) Mutation() *StorageMutation {
-	return _u.mutation
+func (su *StorageUpdate) Mutation() *StorageMutation {
+	return su.mutation
 }
 
 // ClearSyncJobs clears all "sync_jobs" edges to the SyncJob entity.
-func (_u *StorageUpdate) ClearSyncJobs() *StorageUpdate {
-	_u.mutation.ClearSyncJobs()
-	return _u
+func (su *StorageUpdate) ClearSyncJobs() *StorageUpdate {
+	su.mutation.ClearSyncJobs()
+	return su
 }
 
 // RemoveSyncJobIDs removes the "sync_jobs" edge to SyncJob entities by IDs.
-func (_u *StorageUpdate) RemoveSyncJobIDs(ids ...int) *StorageUpdate {
-	_u.mutation.RemoveSyncJobIDs(ids...)
-	return _u
+func (su *StorageUpdate) RemoveSyncJobIDs(ids ...int) *StorageUpdate {
+	su.mutation.RemoveSyncJobIDs(ids...)
+	return su
 }
 
 // RemoveSyncJobs removes "sync_jobs" edges to SyncJob entities.
-func (_u *StorageUpdate) RemoveSyncJobs(v ...*SyncJob) *StorageUpdate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
+func (su *StorageUpdate) RemoveSyncJobs(s ...*SyncJob) *StorageUpdate {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
 	}
-	return _u.RemoveSyncJobIDs(ids...)
+	return su.RemoveSyncJobIDs(ids...)
+}
+
+// ClearWebdavConfig clears the "webdav_config" edge to the WebDAVConfig entity.
+func (su *StorageUpdate) ClearWebdavConfig() *StorageUpdate {
+	su.mutation.ClearWebdavConfig()
+	return su
+}
+
+// ClearS3Config clears the "s3_config" edge to the S3Config entity.
+func (su *StorageUpdate) ClearS3Config() *StorageUpdate {
+	su.mutation.ClearS3Config()
+	return su
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (_u *StorageUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
-	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
+func (su *StorageUpdate) Save(ctx context.Context) (int, error) {
+	su.defaults()
+	return withHooks(ctx, su.sqlSave, su.mutation, su.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_u *StorageUpdate) SaveX(ctx context.Context) int {
-	affected, err := _u.Save(ctx)
+func (su *StorageUpdate) SaveX(ctx context.Context) int {
+	affected, err := su.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -154,29 +200,29 @@ func (_u *StorageUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (_u *StorageUpdate) Exec(ctx context.Context) error {
-	_, err := _u.Save(ctx)
+func (su *StorageUpdate) Exec(ctx context.Context) error {
+	_, err := su.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_u *StorageUpdate) ExecX(ctx context.Context) {
-	if err := _u.Exec(ctx); err != nil {
+func (su *StorageUpdate) ExecX(ctx context.Context) {
+	if err := su.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *StorageUpdate) defaults() {
-	if _, ok := _u.mutation.UpdatedAt(); !ok {
+func (su *StorageUpdate) defaults() {
+	if _, ok := su.mutation.UpdatedAt(); !ok {
 		v := storage.UpdateDefaultUpdatedAt()
-		_u.mutation.SetUpdatedAt(v)
+		su.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_u *StorageUpdate) check() error {
-	if v, ok := _u.mutation.GetType(); ok {
+func (su *StorageUpdate) check() error {
+	if v, ok := su.mutation.GetType(); ok {
 		if err := storage.TypeValidator(v); err != nil {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Storage.type": %w`, err)}
 		}
@@ -184,37 +230,34 @@ func (_u *StorageUpdate) check() error {
 	return nil
 }
 
-func (_u *StorageUpdate) sqlSave(ctx context.Context) (_node int, err error) {
-	if err := _u.check(); err != nil {
-		return _node, err
+func (su *StorageUpdate) sqlSave(ctx context.Context) (n int, err error) {
+	if err := su.check(); err != nil {
+		return n, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(storage.Table, storage.Columns, sqlgraph.NewFieldSpec(storage.FieldID, field.TypeInt))
-	if ps := _u.mutation.predicates; len(ps) > 0 {
+	if ps := su.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := _u.mutation.Name(); ok {
+	if value, ok := su.mutation.Name(); ok {
 		_spec.SetField(storage.FieldName, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.GetType(); ok {
+	if value, ok := su.mutation.GetType(); ok {
 		_spec.SetField(storage.FieldType, field.TypeEnum, value)
 	}
-	if value, ok := _u.mutation.Config(); ok {
-		_spec.SetField(storage.FieldConfig, field.TypeJSON, value)
-	}
-	if value, ok := _u.mutation.Enabled(); ok {
+	if value, ok := su.mutation.Enabled(); ok {
 		_spec.SetField(storage.FieldEnabled, field.TypeBool, value)
 	}
-	if value, ok := _u.mutation.CreatedAt(); ok {
+	if value, ok := su.mutation.CreatedAt(); ok {
 		_spec.SetField(storage.FieldCreatedAt, field.TypeTime, value)
 	}
-	if value, ok := _u.mutation.UpdatedAt(); ok {
+	if value, ok := su.mutation.UpdatedAt(); ok {
 		_spec.SetField(storage.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if _u.mutation.SyncJobsCleared() {
+	if su.mutation.SyncJobsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -227,7 +270,7 @@ func (_u *StorageUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.RemovedSyncJobsIDs(); len(nodes) > 0 && !_u.mutation.SyncJobsCleared() {
+	if nodes := su.mutation.RemovedSyncJobsIDs(); len(nodes) > 0 && !su.mutation.SyncJobsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -243,7 +286,7 @@ func (_u *StorageUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.SyncJobsIDs(); len(nodes) > 0 {
+	if nodes := su.mutation.SyncJobsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -259,7 +302,65 @@ func (_u *StorageUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
+	if su.mutation.WebdavConfigCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   storage.WebdavConfigTable,
+			Columns: []string{storage.WebdavConfigColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(webdavconfig.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := su.mutation.WebdavConfigIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   storage.WebdavConfigTable,
+			Columns: []string{storage.WebdavConfigColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(webdavconfig.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if su.mutation.S3ConfigCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   storage.S3ConfigTable,
+			Columns: []string{storage.S3ConfigColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(s3config.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := su.mutation.S3ConfigIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   storage.S3ConfigTable,
+			Columns: []string{storage.S3ConfigColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(s3config.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if n, err = sqlgraph.UpdateNodes(ctx, su.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{storage.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -267,8 +368,8 @@ func (_u *StorageUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		return 0, err
 	}
-	_u.mutation.done = true
-	return _node, nil
+	su.mutation.done = true
+	return n, nil
 }
 
 // StorageUpdateOne is the builder for updating a single Storage entity.
@@ -280,136 +381,180 @@ type StorageUpdateOne struct {
 }
 
 // SetName sets the "name" field.
-func (_u *StorageUpdateOne) SetName(v string) *StorageUpdateOne {
-	_u.mutation.SetName(v)
-	return _u
+func (suo *StorageUpdateOne) SetName(s string) *StorageUpdateOne {
+	suo.mutation.SetName(s)
+	return suo
 }
 
 // SetNillableName sets the "name" field if the given value is not nil.
-func (_u *StorageUpdateOne) SetNillableName(v *string) *StorageUpdateOne {
-	if v != nil {
-		_u.SetName(*v)
+func (suo *StorageUpdateOne) SetNillableName(s *string) *StorageUpdateOne {
+	if s != nil {
+		suo.SetName(*s)
 	}
-	return _u
+	return suo
 }
 
 // SetType sets the "type" field.
-func (_u *StorageUpdateOne) SetType(v storage.Type) *StorageUpdateOne {
-	_u.mutation.SetType(v)
-	return _u
+func (suo *StorageUpdateOne) SetType(s storage.Type) *StorageUpdateOne {
+	suo.mutation.SetType(s)
+	return suo
 }
 
 // SetNillableType sets the "type" field if the given value is not nil.
-func (_u *StorageUpdateOne) SetNillableType(v *storage.Type) *StorageUpdateOne {
-	if v != nil {
-		_u.SetType(*v)
+func (suo *StorageUpdateOne) SetNillableType(s *storage.Type) *StorageUpdateOne {
+	if s != nil {
+		suo.SetType(*s)
 	}
-	return _u
-}
-
-// SetConfig sets the "config" field.
-func (_u *StorageUpdateOne) SetConfig(v map[string]interface{}) *StorageUpdateOne {
-	_u.mutation.SetConfig(v)
-	return _u
+	return suo
 }
 
 // SetEnabled sets the "enabled" field.
-func (_u *StorageUpdateOne) SetEnabled(v bool) *StorageUpdateOne {
-	_u.mutation.SetEnabled(v)
-	return _u
+func (suo *StorageUpdateOne) SetEnabled(b bool) *StorageUpdateOne {
+	suo.mutation.SetEnabled(b)
+	return suo
 }
 
 // SetNillableEnabled sets the "enabled" field if the given value is not nil.
-func (_u *StorageUpdateOne) SetNillableEnabled(v *bool) *StorageUpdateOne {
-	if v != nil {
-		_u.SetEnabled(*v)
+func (suo *StorageUpdateOne) SetNillableEnabled(b *bool) *StorageUpdateOne {
+	if b != nil {
+		suo.SetEnabled(*b)
 	}
-	return _u
+	return suo
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (_u *StorageUpdateOne) SetCreatedAt(v time.Time) *StorageUpdateOne {
-	_u.mutation.SetCreatedAt(v)
-	return _u
+func (suo *StorageUpdateOne) SetCreatedAt(t time.Time) *StorageUpdateOne {
+	suo.mutation.SetCreatedAt(t)
+	return suo
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (_u *StorageUpdateOne) SetNillableCreatedAt(v *time.Time) *StorageUpdateOne {
-	if v != nil {
-		_u.SetCreatedAt(*v)
+func (suo *StorageUpdateOne) SetNillableCreatedAt(t *time.Time) *StorageUpdateOne {
+	if t != nil {
+		suo.SetCreatedAt(*t)
 	}
-	return _u
+	return suo
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (_u *StorageUpdateOne) SetUpdatedAt(v time.Time) *StorageUpdateOne {
-	_u.mutation.SetUpdatedAt(v)
-	return _u
+func (suo *StorageUpdateOne) SetUpdatedAt(t time.Time) *StorageUpdateOne {
+	suo.mutation.SetUpdatedAt(t)
+	return suo
 }
 
 // AddSyncJobIDs adds the "sync_jobs" edge to the SyncJob entity by IDs.
-func (_u *StorageUpdateOne) AddSyncJobIDs(ids ...int) *StorageUpdateOne {
-	_u.mutation.AddSyncJobIDs(ids...)
-	return _u
+func (suo *StorageUpdateOne) AddSyncJobIDs(ids ...int) *StorageUpdateOne {
+	suo.mutation.AddSyncJobIDs(ids...)
+	return suo
 }
 
 // AddSyncJobs adds the "sync_jobs" edges to the SyncJob entity.
-func (_u *StorageUpdateOne) AddSyncJobs(v ...*SyncJob) *StorageUpdateOne {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
+func (suo *StorageUpdateOne) AddSyncJobs(s ...*SyncJob) *StorageUpdateOne {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
 	}
-	return _u.AddSyncJobIDs(ids...)
+	return suo.AddSyncJobIDs(ids...)
+}
+
+// SetWebdavConfigID sets the "webdav_config" edge to the WebDAVConfig entity by ID.
+func (suo *StorageUpdateOne) SetWebdavConfigID(id int) *StorageUpdateOne {
+	suo.mutation.SetWebdavConfigID(id)
+	return suo
+}
+
+// SetNillableWebdavConfigID sets the "webdav_config" edge to the WebDAVConfig entity by ID if the given value is not nil.
+func (suo *StorageUpdateOne) SetNillableWebdavConfigID(id *int) *StorageUpdateOne {
+	if id != nil {
+		suo = suo.SetWebdavConfigID(*id)
+	}
+	return suo
+}
+
+// SetWebdavConfig sets the "webdav_config" edge to the WebDAVConfig entity.
+func (suo *StorageUpdateOne) SetWebdavConfig(w *WebDAVConfig) *StorageUpdateOne {
+	return suo.SetWebdavConfigID(w.ID)
+}
+
+// SetS3ConfigID sets the "s3_config" edge to the S3Config entity by ID.
+func (suo *StorageUpdateOne) SetS3ConfigID(id int) *StorageUpdateOne {
+	suo.mutation.SetS3ConfigID(id)
+	return suo
+}
+
+// SetNillableS3ConfigID sets the "s3_config" edge to the S3Config entity by ID if the given value is not nil.
+func (suo *StorageUpdateOne) SetNillableS3ConfigID(id *int) *StorageUpdateOne {
+	if id != nil {
+		suo = suo.SetS3ConfigID(*id)
+	}
+	return suo
+}
+
+// SetS3Config sets the "s3_config" edge to the S3Config entity.
+func (suo *StorageUpdateOne) SetS3Config(s *S3Config) *StorageUpdateOne {
+	return suo.SetS3ConfigID(s.ID)
 }
 
 // Mutation returns the StorageMutation object of the builder.
-func (_u *StorageUpdateOne) Mutation() *StorageMutation {
-	return _u.mutation
+func (suo *StorageUpdateOne) Mutation() *StorageMutation {
+	return suo.mutation
 }
 
 // ClearSyncJobs clears all "sync_jobs" edges to the SyncJob entity.
-func (_u *StorageUpdateOne) ClearSyncJobs() *StorageUpdateOne {
-	_u.mutation.ClearSyncJobs()
-	return _u
+func (suo *StorageUpdateOne) ClearSyncJobs() *StorageUpdateOne {
+	suo.mutation.ClearSyncJobs()
+	return suo
 }
 
 // RemoveSyncJobIDs removes the "sync_jobs" edge to SyncJob entities by IDs.
-func (_u *StorageUpdateOne) RemoveSyncJobIDs(ids ...int) *StorageUpdateOne {
-	_u.mutation.RemoveSyncJobIDs(ids...)
-	return _u
+func (suo *StorageUpdateOne) RemoveSyncJobIDs(ids ...int) *StorageUpdateOne {
+	suo.mutation.RemoveSyncJobIDs(ids...)
+	return suo
 }
 
 // RemoveSyncJobs removes "sync_jobs" edges to SyncJob entities.
-func (_u *StorageUpdateOne) RemoveSyncJobs(v ...*SyncJob) *StorageUpdateOne {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
+func (suo *StorageUpdateOne) RemoveSyncJobs(s ...*SyncJob) *StorageUpdateOne {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
 	}
-	return _u.RemoveSyncJobIDs(ids...)
+	return suo.RemoveSyncJobIDs(ids...)
+}
+
+// ClearWebdavConfig clears the "webdav_config" edge to the WebDAVConfig entity.
+func (suo *StorageUpdateOne) ClearWebdavConfig() *StorageUpdateOne {
+	suo.mutation.ClearWebdavConfig()
+	return suo
+}
+
+// ClearS3Config clears the "s3_config" edge to the S3Config entity.
+func (suo *StorageUpdateOne) ClearS3Config() *StorageUpdateOne {
+	suo.mutation.ClearS3Config()
+	return suo
 }
 
 // Where appends a list predicates to the StorageUpdate builder.
-func (_u *StorageUpdateOne) Where(ps ...predicate.Storage) *StorageUpdateOne {
-	_u.mutation.Where(ps...)
-	return _u
+func (suo *StorageUpdateOne) Where(ps ...predicate.Storage) *StorageUpdateOne {
+	suo.mutation.Where(ps...)
+	return suo
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (_u *StorageUpdateOne) Select(field string, fields ...string) *StorageUpdateOne {
-	_u.fields = append([]string{field}, fields...)
-	return _u
+func (suo *StorageUpdateOne) Select(field string, fields ...string) *StorageUpdateOne {
+	suo.fields = append([]string{field}, fields...)
+	return suo
 }
 
 // Save executes the query and returns the updated Storage entity.
-func (_u *StorageUpdateOne) Save(ctx context.Context) (*Storage, error) {
-	_u.defaults()
-	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
+func (suo *StorageUpdateOne) Save(ctx context.Context) (*Storage, error) {
+	suo.defaults()
+	return withHooks(ctx, suo.sqlSave, suo.mutation, suo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_u *StorageUpdateOne) SaveX(ctx context.Context) *Storage {
-	node, err := _u.Save(ctx)
+func (suo *StorageUpdateOne) SaveX(ctx context.Context) *Storage {
+	node, err := suo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -417,29 +562,29 @@ func (_u *StorageUpdateOne) SaveX(ctx context.Context) *Storage {
 }
 
 // Exec executes the query on the entity.
-func (_u *StorageUpdateOne) Exec(ctx context.Context) error {
-	_, err := _u.Save(ctx)
+func (suo *StorageUpdateOne) Exec(ctx context.Context) error {
+	_, err := suo.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_u *StorageUpdateOne) ExecX(ctx context.Context) {
-	if err := _u.Exec(ctx); err != nil {
+func (suo *StorageUpdateOne) ExecX(ctx context.Context) {
+	if err := suo.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *StorageUpdateOne) defaults() {
-	if _, ok := _u.mutation.UpdatedAt(); !ok {
+func (suo *StorageUpdateOne) defaults() {
+	if _, ok := suo.mutation.UpdatedAt(); !ok {
 		v := storage.UpdateDefaultUpdatedAt()
-		_u.mutation.SetUpdatedAt(v)
+		suo.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_u *StorageUpdateOne) check() error {
-	if v, ok := _u.mutation.GetType(); ok {
+func (suo *StorageUpdateOne) check() error {
+	if v, ok := suo.mutation.GetType(); ok {
 		if err := storage.TypeValidator(v); err != nil {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Storage.type": %w`, err)}
 		}
@@ -447,17 +592,17 @@ func (_u *StorageUpdateOne) check() error {
 	return nil
 }
 
-func (_u *StorageUpdateOne) sqlSave(ctx context.Context) (_node *Storage, err error) {
-	if err := _u.check(); err != nil {
+func (suo *StorageUpdateOne) sqlSave(ctx context.Context) (_node *Storage, err error) {
+	if err := suo.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(storage.Table, storage.Columns, sqlgraph.NewFieldSpec(storage.FieldID, field.TypeInt))
-	id, ok := _u.mutation.ID()
+	id, ok := suo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Storage.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := _u.fields; len(fields) > 0 {
+	if fields := suo.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, storage.FieldID)
 		for _, f := range fields {
@@ -469,32 +614,29 @@ func (_u *StorageUpdateOne) sqlSave(ctx context.Context) (_node *Storage, err er
 			}
 		}
 	}
-	if ps := _u.mutation.predicates; len(ps) > 0 {
+	if ps := suo.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := _u.mutation.Name(); ok {
+	if value, ok := suo.mutation.Name(); ok {
 		_spec.SetField(storage.FieldName, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.GetType(); ok {
+	if value, ok := suo.mutation.GetType(); ok {
 		_spec.SetField(storage.FieldType, field.TypeEnum, value)
 	}
-	if value, ok := _u.mutation.Config(); ok {
-		_spec.SetField(storage.FieldConfig, field.TypeJSON, value)
-	}
-	if value, ok := _u.mutation.Enabled(); ok {
+	if value, ok := suo.mutation.Enabled(); ok {
 		_spec.SetField(storage.FieldEnabled, field.TypeBool, value)
 	}
-	if value, ok := _u.mutation.CreatedAt(); ok {
+	if value, ok := suo.mutation.CreatedAt(); ok {
 		_spec.SetField(storage.FieldCreatedAt, field.TypeTime, value)
 	}
-	if value, ok := _u.mutation.UpdatedAt(); ok {
+	if value, ok := suo.mutation.UpdatedAt(); ok {
 		_spec.SetField(storage.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if _u.mutation.SyncJobsCleared() {
+	if suo.mutation.SyncJobsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -507,7 +649,7 @@ func (_u *StorageUpdateOne) sqlSave(ctx context.Context) (_node *Storage, err er
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.RemovedSyncJobsIDs(); len(nodes) > 0 && !_u.mutation.SyncJobsCleared() {
+	if nodes := suo.mutation.RemovedSyncJobsIDs(); len(nodes) > 0 && !suo.mutation.SyncJobsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -523,7 +665,7 @@ func (_u *StorageUpdateOne) sqlSave(ctx context.Context) (_node *Storage, err er
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.SyncJobsIDs(); len(nodes) > 0 {
+	if nodes := suo.mutation.SyncJobsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -539,10 +681,68 @@ func (_u *StorageUpdateOne) sqlSave(ctx context.Context) (_node *Storage, err er
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_node = &Storage{config: _u.config}
+	if suo.mutation.WebdavConfigCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   storage.WebdavConfigTable,
+			Columns: []string{storage.WebdavConfigColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(webdavconfig.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := suo.mutation.WebdavConfigIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   storage.WebdavConfigTable,
+			Columns: []string{storage.WebdavConfigColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(webdavconfig.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if suo.mutation.S3ConfigCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   storage.S3ConfigTable,
+			Columns: []string{storage.S3ConfigColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(s3config.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := suo.mutation.S3ConfigIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   storage.S3ConfigTable,
+			Columns: []string{storage.S3ConfigColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(s3config.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	_node = &Storage{config: suo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, suo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{storage.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -550,6 +750,6 @@ func (_u *StorageUpdateOne) sqlSave(ctx context.Context) (_node *Storage, err er
 		}
 		return nil, err
 	}
-	_u.mutation.done = true
+	suo.mutation.done = true
 	return _node, nil
 }

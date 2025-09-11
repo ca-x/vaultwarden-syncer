@@ -22,106 +22,106 @@ type SyncJobCreate struct {
 }
 
 // SetStatus sets the "status" field.
-func (_c *SyncJobCreate) SetStatus(v syncjob.Status) *SyncJobCreate {
-	_c.mutation.SetStatus(v)
-	return _c
+func (sjc *SyncJobCreate) SetStatus(s syncjob.Status) *SyncJobCreate {
+	sjc.mutation.SetStatus(s)
+	return sjc
 }
 
 // SetOperation sets the "operation" field.
-func (_c *SyncJobCreate) SetOperation(v syncjob.Operation) *SyncJobCreate {
-	_c.mutation.SetOperation(v)
-	return _c
+func (sjc *SyncJobCreate) SetOperation(s syncjob.Operation) *SyncJobCreate {
+	sjc.mutation.SetOperation(s)
+	return sjc
 }
 
 // SetMessage sets the "message" field.
-func (_c *SyncJobCreate) SetMessage(v string) *SyncJobCreate {
-	_c.mutation.SetMessage(v)
-	return _c
+func (sjc *SyncJobCreate) SetMessage(s string) *SyncJobCreate {
+	sjc.mutation.SetMessage(s)
+	return sjc
 }
 
 // SetNillableMessage sets the "message" field if the given value is not nil.
-func (_c *SyncJobCreate) SetNillableMessage(v *string) *SyncJobCreate {
-	if v != nil {
-		_c.SetMessage(*v)
+func (sjc *SyncJobCreate) SetNillableMessage(s *string) *SyncJobCreate {
+	if s != nil {
+		sjc.SetMessage(*s)
 	}
-	return _c
+	return sjc
 }
 
 // SetStartedAt sets the "started_at" field.
-func (_c *SyncJobCreate) SetStartedAt(v time.Time) *SyncJobCreate {
-	_c.mutation.SetStartedAt(v)
-	return _c
+func (sjc *SyncJobCreate) SetStartedAt(t time.Time) *SyncJobCreate {
+	sjc.mutation.SetStartedAt(t)
+	return sjc
 }
 
 // SetNillableStartedAt sets the "started_at" field if the given value is not nil.
-func (_c *SyncJobCreate) SetNillableStartedAt(v *time.Time) *SyncJobCreate {
-	if v != nil {
-		_c.SetStartedAt(*v)
+func (sjc *SyncJobCreate) SetNillableStartedAt(t *time.Time) *SyncJobCreate {
+	if t != nil {
+		sjc.SetStartedAt(*t)
 	}
-	return _c
+	return sjc
 }
 
 // SetCompletedAt sets the "completed_at" field.
-func (_c *SyncJobCreate) SetCompletedAt(v time.Time) *SyncJobCreate {
-	_c.mutation.SetCompletedAt(v)
-	return _c
+func (sjc *SyncJobCreate) SetCompletedAt(t time.Time) *SyncJobCreate {
+	sjc.mutation.SetCompletedAt(t)
+	return sjc
 }
 
 // SetNillableCompletedAt sets the "completed_at" field if the given value is not nil.
-func (_c *SyncJobCreate) SetNillableCompletedAt(v *time.Time) *SyncJobCreate {
-	if v != nil {
-		_c.SetCompletedAt(*v)
+func (sjc *SyncJobCreate) SetNillableCompletedAt(t *time.Time) *SyncJobCreate {
+	if t != nil {
+		sjc.SetCompletedAt(*t)
 	}
-	return _c
+	return sjc
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (_c *SyncJobCreate) SetCreatedAt(v time.Time) *SyncJobCreate {
-	_c.mutation.SetCreatedAt(v)
-	return _c
+func (sjc *SyncJobCreate) SetCreatedAt(t time.Time) *SyncJobCreate {
+	sjc.mutation.SetCreatedAt(t)
+	return sjc
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (_c *SyncJobCreate) SetNillableCreatedAt(v *time.Time) *SyncJobCreate {
-	if v != nil {
-		_c.SetCreatedAt(*v)
+func (sjc *SyncJobCreate) SetNillableCreatedAt(t *time.Time) *SyncJobCreate {
+	if t != nil {
+		sjc.SetCreatedAt(*t)
 	}
-	return _c
+	return sjc
 }
 
 // SetStorageID sets the "storage" edge to the Storage entity by ID.
-func (_c *SyncJobCreate) SetStorageID(id int) *SyncJobCreate {
-	_c.mutation.SetStorageID(id)
-	return _c
+func (sjc *SyncJobCreate) SetStorageID(id int) *SyncJobCreate {
+	sjc.mutation.SetStorageID(id)
+	return sjc
 }
 
 // SetNillableStorageID sets the "storage" edge to the Storage entity by ID if the given value is not nil.
-func (_c *SyncJobCreate) SetNillableStorageID(id *int) *SyncJobCreate {
+func (sjc *SyncJobCreate) SetNillableStorageID(id *int) *SyncJobCreate {
 	if id != nil {
-		_c = _c.SetStorageID(*id)
+		sjc = sjc.SetStorageID(*id)
 	}
-	return _c
+	return sjc
 }
 
 // SetStorage sets the "storage" edge to the Storage entity.
-func (_c *SyncJobCreate) SetStorage(v *Storage) *SyncJobCreate {
-	return _c.SetStorageID(v.ID)
+func (sjc *SyncJobCreate) SetStorage(s *Storage) *SyncJobCreate {
+	return sjc.SetStorageID(s.ID)
 }
 
 // Mutation returns the SyncJobMutation object of the builder.
-func (_c *SyncJobCreate) Mutation() *SyncJobMutation {
-	return _c.mutation
+func (sjc *SyncJobCreate) Mutation() *SyncJobMutation {
+	return sjc.mutation
 }
 
 // Save creates the SyncJob in the database.
-func (_c *SyncJobCreate) Save(ctx context.Context) (*SyncJob, error) {
-	_c.defaults()
-	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
+func (sjc *SyncJobCreate) Save(ctx context.Context) (*SyncJob, error) {
+	sjc.defaults()
+	return withHooks(ctx, sjc.sqlSave, sjc.mutation, sjc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (_c *SyncJobCreate) SaveX(ctx context.Context) *SyncJob {
-	v, err := _c.Save(ctx)
+func (sjc *SyncJobCreate) SaveX(ctx context.Context) *SyncJob {
+	v, err := sjc.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -129,56 +129,56 @@ func (_c *SyncJobCreate) SaveX(ctx context.Context) *SyncJob {
 }
 
 // Exec executes the query.
-func (_c *SyncJobCreate) Exec(ctx context.Context) error {
-	_, err := _c.Save(ctx)
+func (sjc *SyncJobCreate) Exec(ctx context.Context) error {
+	_, err := sjc.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_c *SyncJobCreate) ExecX(ctx context.Context) {
-	if err := _c.Exec(ctx); err != nil {
+func (sjc *SyncJobCreate) ExecX(ctx context.Context) {
+	if err := sjc.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *SyncJobCreate) defaults() {
-	if _, ok := _c.mutation.CreatedAt(); !ok {
+func (sjc *SyncJobCreate) defaults() {
+	if _, ok := sjc.mutation.CreatedAt(); !ok {
 		v := syncjob.DefaultCreatedAt()
-		_c.mutation.SetCreatedAt(v)
+		sjc.mutation.SetCreatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_c *SyncJobCreate) check() error {
-	if _, ok := _c.mutation.Status(); !ok {
+func (sjc *SyncJobCreate) check() error {
+	if _, ok := sjc.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "SyncJob.status"`)}
 	}
-	if v, ok := _c.mutation.Status(); ok {
+	if v, ok := sjc.mutation.Status(); ok {
 		if err := syncjob.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "SyncJob.status": %w`, err)}
 		}
 	}
-	if _, ok := _c.mutation.Operation(); !ok {
+	if _, ok := sjc.mutation.Operation(); !ok {
 		return &ValidationError{Name: "operation", err: errors.New(`ent: missing required field "SyncJob.operation"`)}
 	}
-	if v, ok := _c.mutation.Operation(); ok {
+	if v, ok := sjc.mutation.Operation(); ok {
 		if err := syncjob.OperationValidator(v); err != nil {
 			return &ValidationError{Name: "operation", err: fmt.Errorf(`ent: validator failed for field "SyncJob.operation": %w`, err)}
 		}
 	}
-	if _, ok := _c.mutation.CreatedAt(); !ok {
+	if _, ok := sjc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "SyncJob.created_at"`)}
 	}
 	return nil
 }
 
-func (_c *SyncJobCreate) sqlSave(ctx context.Context) (*SyncJob, error) {
-	if err := _c.check(); err != nil {
+func (sjc *SyncJobCreate) sqlSave(ctx context.Context) (*SyncJob, error) {
+	if err := sjc.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := _c.createSpec()
-	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
+	_node, _spec := sjc.createSpec()
+	if err := sqlgraph.CreateNode(ctx, sjc.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -186,41 +186,41 @@ func (_c *SyncJobCreate) sqlSave(ctx context.Context) (*SyncJob, error) {
 	}
 	id := _spec.ID.Value.(int64)
 	_node.ID = int(id)
-	_c.mutation.id = &_node.ID
-	_c.mutation.done = true
+	sjc.mutation.id = &_node.ID
+	sjc.mutation.done = true
 	return _node, nil
 }
 
-func (_c *SyncJobCreate) createSpec() (*SyncJob, *sqlgraph.CreateSpec) {
+func (sjc *SyncJobCreate) createSpec() (*SyncJob, *sqlgraph.CreateSpec) {
 	var (
-		_node = &SyncJob{config: _c.config}
+		_node = &SyncJob{config: sjc.config}
 		_spec = sqlgraph.NewCreateSpec(syncjob.Table, sqlgraph.NewFieldSpec(syncjob.FieldID, field.TypeInt))
 	)
-	if value, ok := _c.mutation.Status(); ok {
+	if value, ok := sjc.mutation.Status(); ok {
 		_spec.SetField(syncjob.FieldStatus, field.TypeEnum, value)
 		_node.Status = value
 	}
-	if value, ok := _c.mutation.Operation(); ok {
+	if value, ok := sjc.mutation.Operation(); ok {
 		_spec.SetField(syncjob.FieldOperation, field.TypeEnum, value)
 		_node.Operation = value
 	}
-	if value, ok := _c.mutation.Message(); ok {
+	if value, ok := sjc.mutation.Message(); ok {
 		_spec.SetField(syncjob.FieldMessage, field.TypeString, value)
 		_node.Message = value
 	}
-	if value, ok := _c.mutation.StartedAt(); ok {
+	if value, ok := sjc.mutation.StartedAt(); ok {
 		_spec.SetField(syncjob.FieldStartedAt, field.TypeTime, value)
 		_node.StartedAt = value
 	}
-	if value, ok := _c.mutation.CompletedAt(); ok {
+	if value, ok := sjc.mutation.CompletedAt(); ok {
 		_spec.SetField(syncjob.FieldCompletedAt, field.TypeTime, value)
 		_node.CompletedAt = value
 	}
-	if value, ok := _c.mutation.CreatedAt(); ok {
+	if value, ok := sjc.mutation.CreatedAt(); ok {
 		_spec.SetField(syncjob.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if nodes := _c.mutation.StorageIDs(); len(nodes) > 0 {
+	if nodes := sjc.mutation.StorageIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -248,16 +248,16 @@ type SyncJobCreateBulk struct {
 }
 
 // Save creates the SyncJob entities in the database.
-func (_c *SyncJobCreateBulk) Save(ctx context.Context) ([]*SyncJob, error) {
-	if _c.err != nil {
-		return nil, _c.err
+func (sjcb *SyncJobCreateBulk) Save(ctx context.Context) ([]*SyncJob, error) {
+	if sjcb.err != nil {
+		return nil, sjcb.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
-	nodes := make([]*SyncJob, len(_c.builders))
-	mutators := make([]Mutator, len(_c.builders))
-	for i := range _c.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(sjcb.builders))
+	nodes := make([]*SyncJob, len(sjcb.builders))
+	mutators := make([]Mutator, len(sjcb.builders))
+	for i := range sjcb.builders {
 		func(i int, root context.Context) {
-			builder := _c.builders[i]
+			builder := sjcb.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*SyncJobMutation)
@@ -271,11 +271,11 @@ func (_c *SyncJobCreateBulk) Save(ctx context.Context) ([]*SyncJob, error) {
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, sjcb.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, sjcb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -299,7 +299,7 @@ func (_c *SyncJobCreateBulk) Save(ctx context.Context) ([]*SyncJob, error) {
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, sjcb.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -307,8 +307,8 @@ func (_c *SyncJobCreateBulk) Save(ctx context.Context) ([]*SyncJob, error) {
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_c *SyncJobCreateBulk) SaveX(ctx context.Context) []*SyncJob {
-	v, err := _c.Save(ctx)
+func (sjcb *SyncJobCreateBulk) SaveX(ctx context.Context) []*SyncJob {
+	v, err := sjcb.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -316,14 +316,14 @@ func (_c *SyncJobCreateBulk) SaveX(ctx context.Context) []*SyncJob {
 }
 
 // Exec executes the query.
-func (_c *SyncJobCreateBulk) Exec(ctx context.Context) error {
-	_, err := _c.Save(ctx)
+func (sjcb *SyncJobCreateBulk) Exec(ctx context.Context) error {
+	_, err := sjcb.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_c *SyncJobCreateBulk) ExecX(ctx context.Context) {
-	if err := _c.Exec(ctx); err != nil {
+func (sjcb *SyncJobCreateBulk) ExecX(ctx context.Context) {
+	if err := sjcb.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

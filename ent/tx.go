@@ -12,12 +12,16 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// S3Config is the client for interacting with the S3Config builders.
+	S3Config *S3ConfigClient
 	// Storage is the client for interacting with the Storage builders.
 	Storage *StorageClient
 	// SyncJob is the client for interacting with the SyncJob builders.
 	SyncJob *SyncJobClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
+	// WebDAVConfig is the client for interacting with the WebDAVConfig builders.
+	WebDAVConfig *WebDAVConfigClient
 
 	// lazily loaded.
 	client     *Client
@@ -149,9 +153,11 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.S3Config = NewS3ConfigClient(tx.config)
 	tx.Storage = NewStorageClient(tx.config)
 	tx.SyncJob = NewSyncJobClient(tx.config)
 	tx.User = NewUserClient(tx.config)
+	tx.WebDAVConfig = NewWebDAVConfigClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.
@@ -161,7 +167,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: Storage.QueryXXX(), the query will be executed
+// applies a query, for example: S3Config.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

@@ -18,15 +18,15 @@ func init() {
 	storageFields := schema.Storage{}.Fields()
 	_ = storageFields
 	// storageDescEnabled is the schema descriptor for enabled field.
-	storageDescEnabled := storageFields[3].Descriptor()
+	storageDescEnabled := storageFields[2].Descriptor()
 	// storage.DefaultEnabled holds the default value on creation for the enabled field.
 	storage.DefaultEnabled = storageDescEnabled.Default.(bool)
 	// storageDescCreatedAt is the schema descriptor for created_at field.
-	storageDescCreatedAt := storageFields[4].Descriptor()
+	storageDescCreatedAt := storageFields[3].Descriptor()
 	// storage.DefaultCreatedAt holds the default value on creation for the created_at field.
 	storage.DefaultCreatedAt = storageDescCreatedAt.Default.(func() time.Time)
 	// storageDescUpdatedAt is the schema descriptor for updated_at field.
-	storageDescUpdatedAt := storageFields[5].Descriptor()
+	storageDescUpdatedAt := storageFields[4].Descriptor()
 	// storage.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	storage.DefaultUpdatedAt = storageDescUpdatedAt.Default.(func() time.Time)
 	// storage.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

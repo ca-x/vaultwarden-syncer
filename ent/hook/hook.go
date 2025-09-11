@@ -9,6 +9,18 @@ import (
 	"github.com/ca-x/vaultwarden-syncer/ent"
 )
 
+// The S3ConfigFunc type is an adapter to allow the use of ordinary
+// function as S3Config mutator.
+type S3ConfigFunc func(context.Context, *ent.S3ConfigMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f S3ConfigFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.S3ConfigMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.S3ConfigMutation", m)
+}
+
 // The StorageFunc type is an adapter to allow the use of ordinary
 // function as Storage mutator.
 type StorageFunc func(context.Context, *ent.StorageMutation) (ent.Value, error)
@@ -43,6 +55,18 @@ func (f UserFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error)
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserMutation", m)
+}
+
+// The WebDAVConfigFunc type is an adapter to allow the use of ordinary
+// function as WebDAVConfig mutator.
+type WebDAVConfigFunc func(context.Context, *ent.WebDAVConfigMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f WebDAVConfigFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.WebDAVConfigMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.WebDAVConfigMutation", m)
 }
 
 // Condition is a hook condition function.

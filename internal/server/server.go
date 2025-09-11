@@ -68,6 +68,7 @@ func New(cfg *config.Config, handler *handler.Handler, authService *auth.Service
 	protected.GET("/", handler.Index)
 	protected.GET("/logout", handler.Logout)
 	protected.GET("/storage", handler.StorageList)
+	protected.GET("/storage/:id/edit", handler.EditStorage) // 添加编辑存储路由
 	protected.GET("/settings", handler.Settings)
 	protected.POST("/api/storage", handler.CreateStorage)
 	protected.PUT("/api/storage/:id", handler.UpdateStorage)
@@ -79,6 +80,9 @@ func New(cfg *config.Config, handler *handler.Handler, authService *auth.Service
 	protected.GET("/api/sync/status", handler.GetSyncStatus)
 	protected.POST("/api/cleanup", handler.TriggerCleanup)
 	protected.GET("/api/stats", handler.GetSyncJobStats)
+	protected.GET("/api/logs/download", handler.DownloadLogs)
+	protected.GET("/api/storages", handler.GetStorages)           // 添加获取存储列表端点
+	protected.POST("/api/sync-manual", handler.TriggerManualSync) // 添加手动同步端点
 
 	return &Server{
 		echo:   e,

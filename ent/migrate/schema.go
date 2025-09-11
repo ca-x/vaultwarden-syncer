@@ -8,12 +8,35 @@ import (
 )
 
 var (
+	// S3configsColumns holds the columns for the "s3configs" table.
+	S3configsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "endpoint", Type: field.TypeString, Nullable: true},
+		{Name: "access_key_id", Type: field.TypeString},
+		{Name: "secret_access_key", Type: field.TypeString},
+		{Name: "region", Type: field.TypeString},
+		{Name: "bucket", Type: field.TypeString},
+		{Name: "storage_s3_config", Type: field.TypeInt, Unique: true, Nullable: true},
+	}
+	// S3configsTable holds the schema information for the "s3configs" table.
+	S3configsTable = &schema.Table{
+		Name:       "s3configs",
+		Columns:    S3configsColumns,
+		PrimaryKey: []*schema.Column{S3configsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "s3configs_storages_s3_config",
+				Columns:    []*schema.Column{S3configsColumns[6]},
+				RefColumns: []*schema.Column{StoragesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// StoragesColumns holds the columns for the "storages" table.
 	StoragesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString, Unique: true},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"webdav", "s3"}},
-		{Name: "config", Type: field.TypeJSON},
 		{Name: "enabled", Type: field.TypeBool, Default: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
@@ -65,14 +88,40 @@ var (
 		Columns:    UsersColumns,
 		PrimaryKey: []*schema.Column{UsersColumns[0]},
 	}
+	// WebDavConfigsColumns holds the columns for the "web_dav_configs" table.
+	WebDavConfigsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "url", Type: field.TypeString},
+		{Name: "username", Type: field.TypeString},
+		{Name: "password", Type: field.TypeString},
+		{Name: "storage_webdav_config", Type: field.TypeInt, Unique: true, Nullable: true},
+	}
+	// WebDavConfigsTable holds the schema information for the "web_dav_configs" table.
+	WebDavConfigsTable = &schema.Table{
+		Name:       "web_dav_configs",
+		Columns:    WebDavConfigsColumns,
+		PrimaryKey: []*schema.Column{WebDavConfigsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "web_dav_configs_storages_webdav_config",
+				Columns:    []*schema.Column{WebDavConfigsColumns[4]},
+				RefColumns: []*schema.Column{StoragesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		S3configsTable,
 		StoragesTable,
 		SyncJobsTable,
 		UsersTable,
+		WebDavConfigsTable,
 	}
 )
 
 func init() {
+	S3configsTable.ForeignKeys[0].RefTable = StoragesTable
 	SyncJobsTable.ForeignKeys[0].RefTable = StoragesTable
+	WebDavConfigsTable.ForeignKeys[0].RefTable = StoragesTable
 }

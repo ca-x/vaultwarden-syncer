@@ -273,6 +273,52 @@ func HasSyncJobsWith(preds ...predicate.SyncJob) predicate.Storage {
 	})
 }
 
+// HasWebdavConfig applies the HasEdge predicate on the "webdav_config" edge.
+func HasWebdavConfig() predicate.Storage {
+	return predicate.Storage(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, WebdavConfigTable, WebdavConfigColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasWebdavConfigWith applies the HasEdge predicate on the "webdav_config" edge with a given conditions (other predicates).
+func HasWebdavConfigWith(preds ...predicate.WebDAVConfig) predicate.Storage {
+	return predicate.Storage(func(s *sql.Selector) {
+		step := newWebdavConfigStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasS3Config applies the HasEdge predicate on the "s3_config" edge.
+func HasS3Config() predicate.Storage {
+	return predicate.Storage(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, S3ConfigTable, S3ConfigColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasS3ConfigWith applies the HasEdge predicate on the "s3_config" edge with a given conditions (other predicates).
+func HasS3ConfigWith(preds ...predicate.S3Config) predicate.Storage {
+	return predicate.Storage(func(s *sql.Selector) {
+		step := newS3ConfigStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Storage) predicate.Storage {
 	return predicate.Storage(sql.AndPredicates(predicates...))

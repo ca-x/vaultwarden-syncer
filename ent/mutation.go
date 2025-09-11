@@ -12,9 +12,11 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/ca-x/vaultwarden-syncer/ent/predicate"
+	"github.com/ca-x/vaultwarden-syncer/ent/s3config"
 	"github.com/ca-x/vaultwarden-syncer/ent/storage"
 	"github.com/ca-x/vaultwarden-syncer/ent/syncjob"
 	"github.com/ca-x/vaultwarden-syncer/ent/user"
+	"github.com/ca-x/vaultwarden-syncer/ent/webdavconfig"
 )
 
 const (
@@ -26,30 +28,666 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeStorage = "Storage"
-	TypeSyncJob = "SyncJob"
-	TypeUser    = "User"
+	TypeS3Config     = "S3Config"
+	TypeStorage      = "Storage"
+	TypeSyncJob      = "SyncJob"
+	TypeUser         = "User"
+	TypeWebDAVConfig = "WebDAVConfig"
 )
+
+// S3ConfigMutation represents an operation that mutates the S3Config nodes in the graph.
+type S3ConfigMutation struct {
+	config
+	op                Op
+	typ               string
+	id                *int
+	endpoint          *string
+	access_key_id     *string
+	secret_access_key *string
+	region            *string
+	bucket            *string
+	clearedFields     map[string]struct{}
+	storage           *int
+	clearedstorage    bool
+	done              bool
+	oldValue          func(context.Context) (*S3Config, error)
+	predicates        []predicate.S3Config
+}
+
+var _ ent.Mutation = (*S3ConfigMutation)(nil)
+
+// s3configOption allows management of the mutation configuration using functional options.
+type s3configOption func(*S3ConfigMutation)
+
+// newS3ConfigMutation creates new mutation for the S3Config entity.
+func newS3ConfigMutation(c config, op Op, opts ...s3configOption) *S3ConfigMutation {
+	m := &S3ConfigMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeS3Config,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withS3ConfigID sets the ID field of the mutation.
+func withS3ConfigID(id int) s3configOption {
+	return func(m *S3ConfigMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *S3Config
+		)
+		m.oldValue = func(ctx context.Context) (*S3Config, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().S3Config.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withS3Config sets the old S3Config of the mutation.
+func withS3Config(node *S3Config) s3configOption {
+	return func(m *S3ConfigMutation) {
+		m.oldValue = func(context.Context) (*S3Config, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m S3ConfigMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m S3ConfigMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *S3ConfigMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *S3ConfigMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().S3Config.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetEndpoint sets the "endpoint" field.
+func (m *S3ConfigMutation) SetEndpoint(s string) {
+	m.endpoint = &s
+}
+
+// Endpoint returns the value of the "endpoint" field in the mutation.
+func (m *S3ConfigMutation) Endpoint() (r string, exists bool) {
+	v := m.endpoint
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEndpoint returns the old "endpoint" field's value of the S3Config entity.
+// If the S3Config object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *S3ConfigMutation) OldEndpoint(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEndpoint is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEndpoint requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEndpoint: %w", err)
+	}
+	return oldValue.Endpoint, nil
+}
+
+// ClearEndpoint clears the value of the "endpoint" field.
+func (m *S3ConfigMutation) ClearEndpoint() {
+	m.endpoint = nil
+	m.clearedFields[s3config.FieldEndpoint] = struct{}{}
+}
+
+// EndpointCleared returns if the "endpoint" field was cleared in this mutation.
+func (m *S3ConfigMutation) EndpointCleared() bool {
+	_, ok := m.clearedFields[s3config.FieldEndpoint]
+	return ok
+}
+
+// ResetEndpoint resets all changes to the "endpoint" field.
+func (m *S3ConfigMutation) ResetEndpoint() {
+	m.endpoint = nil
+	delete(m.clearedFields, s3config.FieldEndpoint)
+}
+
+// SetAccessKeyID sets the "access_key_id" field.
+func (m *S3ConfigMutation) SetAccessKeyID(s string) {
+	m.access_key_id = &s
+}
+
+// AccessKeyID returns the value of the "access_key_id" field in the mutation.
+func (m *S3ConfigMutation) AccessKeyID() (r string, exists bool) {
+	v := m.access_key_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAccessKeyID returns the old "access_key_id" field's value of the S3Config entity.
+// If the S3Config object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *S3ConfigMutation) OldAccessKeyID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAccessKeyID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAccessKeyID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAccessKeyID: %w", err)
+	}
+	return oldValue.AccessKeyID, nil
+}
+
+// ResetAccessKeyID resets all changes to the "access_key_id" field.
+func (m *S3ConfigMutation) ResetAccessKeyID() {
+	m.access_key_id = nil
+}
+
+// SetSecretAccessKey sets the "secret_access_key" field.
+func (m *S3ConfigMutation) SetSecretAccessKey(s string) {
+	m.secret_access_key = &s
+}
+
+// SecretAccessKey returns the value of the "secret_access_key" field in the mutation.
+func (m *S3ConfigMutation) SecretAccessKey() (r string, exists bool) {
+	v := m.secret_access_key
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSecretAccessKey returns the old "secret_access_key" field's value of the S3Config entity.
+// If the S3Config object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *S3ConfigMutation) OldSecretAccessKey(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSecretAccessKey is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSecretAccessKey requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSecretAccessKey: %w", err)
+	}
+	return oldValue.SecretAccessKey, nil
+}
+
+// ResetSecretAccessKey resets all changes to the "secret_access_key" field.
+func (m *S3ConfigMutation) ResetSecretAccessKey() {
+	m.secret_access_key = nil
+}
+
+// SetRegion sets the "region" field.
+func (m *S3ConfigMutation) SetRegion(s string) {
+	m.region = &s
+}
+
+// Region returns the value of the "region" field in the mutation.
+func (m *S3ConfigMutation) Region() (r string, exists bool) {
+	v := m.region
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRegion returns the old "region" field's value of the S3Config entity.
+// If the S3Config object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *S3ConfigMutation) OldRegion(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRegion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRegion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRegion: %w", err)
+	}
+	return oldValue.Region, nil
+}
+
+// ResetRegion resets all changes to the "region" field.
+func (m *S3ConfigMutation) ResetRegion() {
+	m.region = nil
+}
+
+// SetBucket sets the "bucket" field.
+func (m *S3ConfigMutation) SetBucket(s string) {
+	m.bucket = &s
+}
+
+// Bucket returns the value of the "bucket" field in the mutation.
+func (m *S3ConfigMutation) Bucket() (r string, exists bool) {
+	v := m.bucket
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBucket returns the old "bucket" field's value of the S3Config entity.
+// If the S3Config object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *S3ConfigMutation) OldBucket(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBucket is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBucket requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBucket: %w", err)
+	}
+	return oldValue.Bucket, nil
+}
+
+// ResetBucket resets all changes to the "bucket" field.
+func (m *S3ConfigMutation) ResetBucket() {
+	m.bucket = nil
+}
+
+// SetStorageID sets the "storage" edge to the Storage entity by id.
+func (m *S3ConfigMutation) SetStorageID(id int) {
+	m.storage = &id
+}
+
+// ClearStorage clears the "storage" edge to the Storage entity.
+func (m *S3ConfigMutation) ClearStorage() {
+	m.clearedstorage = true
+}
+
+// StorageCleared reports if the "storage" edge to the Storage entity was cleared.
+func (m *S3ConfigMutation) StorageCleared() bool {
+	return m.clearedstorage
+}
+
+// StorageID returns the "storage" edge ID in the mutation.
+func (m *S3ConfigMutation) StorageID() (id int, exists bool) {
+	if m.storage != nil {
+		return *m.storage, true
+	}
+	return
+}
+
+// StorageIDs returns the "storage" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// StorageID instead. It exists only for internal usage by the builders.
+func (m *S3ConfigMutation) StorageIDs() (ids []int) {
+	if id := m.storage; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetStorage resets all changes to the "storage" edge.
+func (m *S3ConfigMutation) ResetStorage() {
+	m.storage = nil
+	m.clearedstorage = false
+}
+
+// Where appends a list predicates to the S3ConfigMutation builder.
+func (m *S3ConfigMutation) Where(ps ...predicate.S3Config) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the S3ConfigMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *S3ConfigMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.S3Config, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *S3ConfigMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *S3ConfigMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (S3Config).
+func (m *S3ConfigMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *S3ConfigMutation) Fields() []string {
+	fields := make([]string, 0, 5)
+	if m.endpoint != nil {
+		fields = append(fields, s3config.FieldEndpoint)
+	}
+	if m.access_key_id != nil {
+		fields = append(fields, s3config.FieldAccessKeyID)
+	}
+	if m.secret_access_key != nil {
+		fields = append(fields, s3config.FieldSecretAccessKey)
+	}
+	if m.region != nil {
+		fields = append(fields, s3config.FieldRegion)
+	}
+	if m.bucket != nil {
+		fields = append(fields, s3config.FieldBucket)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *S3ConfigMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case s3config.FieldEndpoint:
+		return m.Endpoint()
+	case s3config.FieldAccessKeyID:
+		return m.AccessKeyID()
+	case s3config.FieldSecretAccessKey:
+		return m.SecretAccessKey()
+	case s3config.FieldRegion:
+		return m.Region()
+	case s3config.FieldBucket:
+		return m.Bucket()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *S3ConfigMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case s3config.FieldEndpoint:
+		return m.OldEndpoint(ctx)
+	case s3config.FieldAccessKeyID:
+		return m.OldAccessKeyID(ctx)
+	case s3config.FieldSecretAccessKey:
+		return m.OldSecretAccessKey(ctx)
+	case s3config.FieldRegion:
+		return m.OldRegion(ctx)
+	case s3config.FieldBucket:
+		return m.OldBucket(ctx)
+	}
+	return nil, fmt.Errorf("unknown S3Config field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *S3ConfigMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case s3config.FieldEndpoint:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEndpoint(v)
+		return nil
+	case s3config.FieldAccessKeyID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAccessKeyID(v)
+		return nil
+	case s3config.FieldSecretAccessKey:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSecretAccessKey(v)
+		return nil
+	case s3config.FieldRegion:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRegion(v)
+		return nil
+	case s3config.FieldBucket:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBucket(v)
+		return nil
+	}
+	return fmt.Errorf("unknown S3Config field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *S3ConfigMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *S3ConfigMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *S3ConfigMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown S3Config numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *S3ConfigMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(s3config.FieldEndpoint) {
+		fields = append(fields, s3config.FieldEndpoint)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *S3ConfigMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *S3ConfigMutation) ClearField(name string) error {
+	switch name {
+	case s3config.FieldEndpoint:
+		m.ClearEndpoint()
+		return nil
+	}
+	return fmt.Errorf("unknown S3Config nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *S3ConfigMutation) ResetField(name string) error {
+	switch name {
+	case s3config.FieldEndpoint:
+		m.ResetEndpoint()
+		return nil
+	case s3config.FieldAccessKeyID:
+		m.ResetAccessKeyID()
+		return nil
+	case s3config.FieldSecretAccessKey:
+		m.ResetSecretAccessKey()
+		return nil
+	case s3config.FieldRegion:
+		m.ResetRegion()
+		return nil
+	case s3config.FieldBucket:
+		m.ResetBucket()
+		return nil
+	}
+	return fmt.Errorf("unknown S3Config field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *S3ConfigMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.storage != nil {
+		edges = append(edges, s3config.EdgeStorage)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *S3ConfigMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case s3config.EdgeStorage:
+		if id := m.storage; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *S3ConfigMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *S3ConfigMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *S3ConfigMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedstorage {
+		edges = append(edges, s3config.EdgeStorage)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *S3ConfigMutation) EdgeCleared(name string) bool {
+	switch name {
+	case s3config.EdgeStorage:
+		return m.clearedstorage
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *S3ConfigMutation) ClearEdge(name string) error {
+	switch name {
+	case s3config.EdgeStorage:
+		m.ClearStorage()
+		return nil
+	}
+	return fmt.Errorf("unknown S3Config unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *S3ConfigMutation) ResetEdge(name string) error {
+	switch name {
+	case s3config.EdgeStorage:
+		m.ResetStorage()
+		return nil
+	}
+	return fmt.Errorf("unknown S3Config edge %s", name)
+}
 
 // StorageMutation represents an operation that mutates the Storage nodes in the graph.
 type StorageMutation struct {
 	config
-	op               Op
-	typ              string
-	id               *int
-	name             *string
-	_type            *storage.Type
-	_config          *map[string]interface{}
-	enabled          *bool
-	created_at       *time.Time
-	updated_at       *time.Time
-	clearedFields    map[string]struct{}
-	sync_jobs        map[int]struct{}
-	removedsync_jobs map[int]struct{}
-	clearedsync_jobs bool
-	done             bool
-	oldValue         func(context.Context) (*Storage, error)
-	predicates       []predicate.Storage
+	op                   Op
+	typ                  string
+	id                   *int
+	name                 *string
+	_type                *storage.Type
+	enabled              *bool
+	created_at           *time.Time
+	updated_at           *time.Time
+	clearedFields        map[string]struct{}
+	sync_jobs            map[int]struct{}
+	removedsync_jobs     map[int]struct{}
+	clearedsync_jobs     bool
+	webdav_config        *int
+	clearedwebdav_config bool
+	s3_config            *int
+	cleareds3_config     bool
+	done                 bool
+	oldValue             func(context.Context) (*Storage, error)
+	predicates           []predicate.Storage
 }
 
 var _ ent.Mutation = (*StorageMutation)(nil)
@@ -222,42 +860,6 @@ func (m *StorageMutation) ResetType() {
 	m._type = nil
 }
 
-// SetConfig sets the "config" field.
-func (m *StorageMutation) SetConfig(value map[string]interface{}) {
-	m._config = &value
-}
-
-// Config returns the value of the "config" field in the mutation.
-func (m *StorageMutation) Config() (r map[string]interface{}, exists bool) {
-	v := m._config
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldConfig returns the old "config" field's value of the Storage entity.
-// If the Storage object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *StorageMutation) OldConfig(ctx context.Context) (v map[string]interface{}, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldConfig is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldConfig requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldConfig: %w", err)
-	}
-	return oldValue.Config, nil
-}
-
-// ResetConfig resets all changes to the "config" field.
-func (m *StorageMutation) ResetConfig() {
-	m._config = nil
-}
-
 // SetEnabled sets the "enabled" field.
 func (m *StorageMutation) SetEnabled(b bool) {
 	m.enabled = &b
@@ -420,6 +1022,84 @@ func (m *StorageMutation) ResetSyncJobs() {
 	m.removedsync_jobs = nil
 }
 
+// SetWebdavConfigID sets the "webdav_config" edge to the WebDAVConfig entity by id.
+func (m *StorageMutation) SetWebdavConfigID(id int) {
+	m.webdav_config = &id
+}
+
+// ClearWebdavConfig clears the "webdav_config" edge to the WebDAVConfig entity.
+func (m *StorageMutation) ClearWebdavConfig() {
+	m.clearedwebdav_config = true
+}
+
+// WebdavConfigCleared reports if the "webdav_config" edge to the WebDAVConfig entity was cleared.
+func (m *StorageMutation) WebdavConfigCleared() bool {
+	return m.clearedwebdav_config
+}
+
+// WebdavConfigID returns the "webdav_config" edge ID in the mutation.
+func (m *StorageMutation) WebdavConfigID() (id int, exists bool) {
+	if m.webdav_config != nil {
+		return *m.webdav_config, true
+	}
+	return
+}
+
+// WebdavConfigIDs returns the "webdav_config" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WebdavConfigID instead. It exists only for internal usage by the builders.
+func (m *StorageMutation) WebdavConfigIDs() (ids []int) {
+	if id := m.webdav_config; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWebdavConfig resets all changes to the "webdav_config" edge.
+func (m *StorageMutation) ResetWebdavConfig() {
+	m.webdav_config = nil
+	m.clearedwebdav_config = false
+}
+
+// SetS3ConfigID sets the "s3_config" edge to the S3Config entity by id.
+func (m *StorageMutation) SetS3ConfigID(id int) {
+	m.s3_config = &id
+}
+
+// ClearS3Config clears the "s3_config" edge to the S3Config entity.
+func (m *StorageMutation) ClearS3Config() {
+	m.cleareds3_config = true
+}
+
+// S3ConfigCleared reports if the "s3_config" edge to the S3Config entity was cleared.
+func (m *StorageMutation) S3ConfigCleared() bool {
+	return m.cleareds3_config
+}
+
+// S3ConfigID returns the "s3_config" edge ID in the mutation.
+func (m *StorageMutation) S3ConfigID() (id int, exists bool) {
+	if m.s3_config != nil {
+		return *m.s3_config, true
+	}
+	return
+}
+
+// S3ConfigIDs returns the "s3_config" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// S3ConfigID instead. It exists only for internal usage by the builders.
+func (m *StorageMutation) S3ConfigIDs() (ids []int) {
+	if id := m.s3_config; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetS3Config resets all changes to the "s3_config" edge.
+func (m *StorageMutation) ResetS3Config() {
+	m.s3_config = nil
+	m.cleareds3_config = false
+}
+
 // Where appends a list predicates to the StorageMutation builder.
 func (m *StorageMutation) Where(ps ...predicate.Storage) {
 	m.predicates = append(m.predicates, ps...)
@@ -454,15 +1134,12 @@ func (m *StorageMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *StorageMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 5)
 	if m.name != nil {
 		fields = append(fields, storage.FieldName)
 	}
 	if m._type != nil {
 		fields = append(fields, storage.FieldType)
-	}
-	if m._config != nil {
-		fields = append(fields, storage.FieldConfig)
 	}
 	if m.enabled != nil {
 		fields = append(fields, storage.FieldEnabled)
@@ -485,8 +1162,6 @@ func (m *StorageMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case storage.FieldType:
 		return m.GetType()
-	case storage.FieldConfig:
-		return m.Config()
 	case storage.FieldEnabled:
 		return m.Enabled()
 	case storage.FieldCreatedAt:
@@ -506,8 +1181,6 @@ func (m *StorageMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldName(ctx)
 	case storage.FieldType:
 		return m.OldType(ctx)
-	case storage.FieldConfig:
-		return m.OldConfig(ctx)
 	case storage.FieldEnabled:
 		return m.OldEnabled(ctx)
 	case storage.FieldCreatedAt:
@@ -536,13 +1209,6 @@ func (m *StorageMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetType(v)
-		return nil
-	case storage.FieldConfig:
-		v, ok := value.(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetConfig(v)
 		return nil
 	case storage.FieldEnabled:
 		v, ok := value.(bool)
@@ -620,9 +1286,6 @@ func (m *StorageMutation) ResetField(name string) error {
 	case storage.FieldType:
 		m.ResetType()
 		return nil
-	case storage.FieldConfig:
-		m.ResetConfig()
-		return nil
 	case storage.FieldEnabled:
 		m.ResetEnabled()
 		return nil
@@ -638,9 +1301,15 @@ func (m *StorageMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *StorageMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 3)
 	if m.sync_jobs != nil {
 		edges = append(edges, storage.EdgeSyncJobs)
+	}
+	if m.webdav_config != nil {
+		edges = append(edges, storage.EdgeWebdavConfig)
+	}
+	if m.s3_config != nil {
+		edges = append(edges, storage.EdgeS3Config)
 	}
 	return edges
 }
@@ -655,13 +1324,21 @@ func (m *StorageMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case storage.EdgeWebdavConfig:
+		if id := m.webdav_config; id != nil {
+			return []ent.Value{*id}
+		}
+	case storage.EdgeS3Config:
+		if id := m.s3_config; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *StorageMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 3)
 	if m.removedsync_jobs != nil {
 		edges = append(edges, storage.EdgeSyncJobs)
 	}
@@ -684,9 +1361,15 @@ func (m *StorageMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *StorageMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 3)
 	if m.clearedsync_jobs {
 		edges = append(edges, storage.EdgeSyncJobs)
+	}
+	if m.clearedwebdav_config {
+		edges = append(edges, storage.EdgeWebdavConfig)
+	}
+	if m.cleareds3_config {
+		edges = append(edges, storage.EdgeS3Config)
 	}
 	return edges
 }
@@ -697,6 +1380,10 @@ func (m *StorageMutation) EdgeCleared(name string) bool {
 	switch name {
 	case storage.EdgeSyncJobs:
 		return m.clearedsync_jobs
+	case storage.EdgeWebdavConfig:
+		return m.clearedwebdav_config
+	case storage.EdgeS3Config:
+		return m.cleareds3_config
 	}
 	return false
 }
@@ -705,6 +1392,12 @@ func (m *StorageMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *StorageMutation) ClearEdge(name string) error {
 	switch name {
+	case storage.EdgeWebdavConfig:
+		m.ClearWebdavConfig()
+		return nil
+	case storage.EdgeS3Config:
+		m.ClearS3Config()
+		return nil
 	}
 	return fmt.Errorf("unknown Storage unique edge %s", name)
 }
@@ -715,6 +1408,12 @@ func (m *StorageMutation) ResetEdge(name string) error {
 	switch name {
 	case storage.EdgeSyncJobs:
 		m.ResetSyncJobs()
+		return nil
+	case storage.EdgeWebdavConfig:
+		m.ResetWebdavConfig()
+		return nil
+	case storage.EdgeS3Config:
+		m.ResetS3Config()
 		return nil
 	}
 	return fmt.Errorf("unknown Storage edge %s", name)
@@ -2059,4 +2758,505 @@ func (m *UserMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *UserMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown User edge %s", name)
+}
+
+// WebDAVConfigMutation represents an operation that mutates the WebDAVConfig nodes in the graph.
+type WebDAVConfigMutation struct {
+	config
+	op             Op
+	typ            string
+	id             *int
+	url            *string
+	username       *string
+	password       *string
+	clearedFields  map[string]struct{}
+	storage        *int
+	clearedstorage bool
+	done           bool
+	oldValue       func(context.Context) (*WebDAVConfig, error)
+	predicates     []predicate.WebDAVConfig
+}
+
+var _ ent.Mutation = (*WebDAVConfigMutation)(nil)
+
+// webdavconfigOption allows management of the mutation configuration using functional options.
+type webdavconfigOption func(*WebDAVConfigMutation)
+
+// newWebDAVConfigMutation creates new mutation for the WebDAVConfig entity.
+func newWebDAVConfigMutation(c config, op Op, opts ...webdavconfigOption) *WebDAVConfigMutation {
+	m := &WebDAVConfigMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeWebDAVConfig,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withWebDAVConfigID sets the ID field of the mutation.
+func withWebDAVConfigID(id int) webdavconfigOption {
+	return func(m *WebDAVConfigMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *WebDAVConfig
+		)
+		m.oldValue = func(ctx context.Context) (*WebDAVConfig, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().WebDAVConfig.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withWebDAVConfig sets the old WebDAVConfig of the mutation.
+func withWebDAVConfig(node *WebDAVConfig) webdavconfigOption {
+	return func(m *WebDAVConfigMutation) {
+		m.oldValue = func(context.Context) (*WebDAVConfig, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m WebDAVConfigMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m WebDAVConfigMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *WebDAVConfigMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *WebDAVConfigMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().WebDAVConfig.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetURL sets the "url" field.
+func (m *WebDAVConfigMutation) SetURL(s string) {
+	m.url = &s
+}
+
+// URL returns the value of the "url" field in the mutation.
+func (m *WebDAVConfigMutation) URL() (r string, exists bool) {
+	v := m.url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldURL returns the old "url" field's value of the WebDAVConfig entity.
+// If the WebDAVConfig object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WebDAVConfigMutation) OldURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldURL: %w", err)
+	}
+	return oldValue.URL, nil
+}
+
+// ResetURL resets all changes to the "url" field.
+func (m *WebDAVConfigMutation) ResetURL() {
+	m.url = nil
+}
+
+// SetUsername sets the "username" field.
+func (m *WebDAVConfigMutation) SetUsername(s string) {
+	m.username = &s
+}
+
+// Username returns the value of the "username" field in the mutation.
+func (m *WebDAVConfigMutation) Username() (r string, exists bool) {
+	v := m.username
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUsername returns the old "username" field's value of the WebDAVConfig entity.
+// If the WebDAVConfig object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WebDAVConfigMutation) OldUsername(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUsername is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUsername requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUsername: %w", err)
+	}
+	return oldValue.Username, nil
+}
+
+// ResetUsername resets all changes to the "username" field.
+func (m *WebDAVConfigMutation) ResetUsername() {
+	m.username = nil
+}
+
+// SetPassword sets the "password" field.
+func (m *WebDAVConfigMutation) SetPassword(s string) {
+	m.password = &s
+}
+
+// Password returns the value of the "password" field in the mutation.
+func (m *WebDAVConfigMutation) Password() (r string, exists bool) {
+	v := m.password
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPassword returns the old "password" field's value of the WebDAVConfig entity.
+// If the WebDAVConfig object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WebDAVConfigMutation) OldPassword(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPassword is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPassword requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPassword: %w", err)
+	}
+	return oldValue.Password, nil
+}
+
+// ResetPassword resets all changes to the "password" field.
+func (m *WebDAVConfigMutation) ResetPassword() {
+	m.password = nil
+}
+
+// SetStorageID sets the "storage" edge to the Storage entity by id.
+func (m *WebDAVConfigMutation) SetStorageID(id int) {
+	m.storage = &id
+}
+
+// ClearStorage clears the "storage" edge to the Storage entity.
+func (m *WebDAVConfigMutation) ClearStorage() {
+	m.clearedstorage = true
+}
+
+// StorageCleared reports if the "storage" edge to the Storage entity was cleared.
+func (m *WebDAVConfigMutation) StorageCleared() bool {
+	return m.clearedstorage
+}
+
+// StorageID returns the "storage" edge ID in the mutation.
+func (m *WebDAVConfigMutation) StorageID() (id int, exists bool) {
+	if m.storage != nil {
+		return *m.storage, true
+	}
+	return
+}
+
+// StorageIDs returns the "storage" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// StorageID instead. It exists only for internal usage by the builders.
+func (m *WebDAVConfigMutation) StorageIDs() (ids []int) {
+	if id := m.storage; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetStorage resets all changes to the "storage" edge.
+func (m *WebDAVConfigMutation) ResetStorage() {
+	m.storage = nil
+	m.clearedstorage = false
+}
+
+// Where appends a list predicates to the WebDAVConfigMutation builder.
+func (m *WebDAVConfigMutation) Where(ps ...predicate.WebDAVConfig) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the WebDAVConfigMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *WebDAVConfigMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.WebDAVConfig, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *WebDAVConfigMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *WebDAVConfigMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (WebDAVConfig).
+func (m *WebDAVConfigMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *WebDAVConfigMutation) Fields() []string {
+	fields := make([]string, 0, 3)
+	if m.url != nil {
+		fields = append(fields, webdavconfig.FieldURL)
+	}
+	if m.username != nil {
+		fields = append(fields, webdavconfig.FieldUsername)
+	}
+	if m.password != nil {
+		fields = append(fields, webdavconfig.FieldPassword)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *WebDAVConfigMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case webdavconfig.FieldURL:
+		return m.URL()
+	case webdavconfig.FieldUsername:
+		return m.Username()
+	case webdavconfig.FieldPassword:
+		return m.Password()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *WebDAVConfigMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case webdavconfig.FieldURL:
+		return m.OldURL(ctx)
+	case webdavconfig.FieldUsername:
+		return m.OldUsername(ctx)
+	case webdavconfig.FieldPassword:
+		return m.OldPassword(ctx)
+	}
+	return nil, fmt.Errorf("unknown WebDAVConfig field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *WebDAVConfigMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case webdavconfig.FieldURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetURL(v)
+		return nil
+	case webdavconfig.FieldUsername:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUsername(v)
+		return nil
+	case webdavconfig.FieldPassword:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPassword(v)
+		return nil
+	}
+	return fmt.Errorf("unknown WebDAVConfig field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *WebDAVConfigMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *WebDAVConfigMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *WebDAVConfigMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown WebDAVConfig numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *WebDAVConfigMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *WebDAVConfigMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *WebDAVConfigMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown WebDAVConfig nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *WebDAVConfigMutation) ResetField(name string) error {
+	switch name {
+	case webdavconfig.FieldURL:
+		m.ResetURL()
+		return nil
+	case webdavconfig.FieldUsername:
+		m.ResetUsername()
+		return nil
+	case webdavconfig.FieldPassword:
+		m.ResetPassword()
+		return nil
+	}
+	return fmt.Errorf("unknown WebDAVConfig field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *WebDAVConfigMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.storage != nil {
+		edges = append(edges, webdavconfig.EdgeStorage)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *WebDAVConfigMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case webdavconfig.EdgeStorage:
+		if id := m.storage; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *WebDAVConfigMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *WebDAVConfigMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *WebDAVConfigMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedstorage {
+		edges = append(edges, webdavconfig.EdgeStorage)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *WebDAVConfigMutation) EdgeCleared(name string) bool {
+	switch name {
+	case webdavconfig.EdgeStorage:
+		return m.clearedstorage
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *WebDAVConfigMutation) ClearEdge(name string) error {
+	switch name {
+	case webdavconfig.EdgeStorage:
+		m.ClearStorage()
+		return nil
+	}
+	return fmt.Errorf("unknown WebDAVConfig unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *WebDAVConfigMutation) ResetEdge(name string) error {
+	switch name {
+	case webdavconfig.EdgeStorage:
+		m.ResetStorage()
+		return nil
+	}
+	return fmt.Errorf("unknown WebDAVConfig edge %s", name)
 }

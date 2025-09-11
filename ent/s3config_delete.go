@@ -9,29 +9,29 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/ca-x/vaultwarden-syncer/ent/predicate"
-	"github.com/ca-x/vaultwarden-syncer/ent/storage"
+	"github.com/ca-x/vaultwarden-syncer/ent/s3config"
 )
 
-// StorageDelete is the builder for deleting a Storage entity.
-type StorageDelete struct {
+// S3ConfigDelete is the builder for deleting a S3Config entity.
+type S3ConfigDelete struct {
 	config
 	hooks    []Hook
-	mutation *StorageMutation
+	mutation *S3ConfigMutation
 }
 
-// Where appends a list predicates to the StorageDelete builder.
-func (sd *StorageDelete) Where(ps ...predicate.Storage) *StorageDelete {
+// Where appends a list predicates to the S3ConfigDelete builder.
+func (sd *S3ConfigDelete) Where(ps ...predicate.S3Config) *S3ConfigDelete {
 	sd.mutation.Where(ps...)
 	return sd
 }
 
 // Exec executes the deletion query and returns how many vertices were deleted.
-func (sd *StorageDelete) Exec(ctx context.Context) (int, error) {
+func (sd *S3ConfigDelete) Exec(ctx context.Context) (int, error) {
 	return withHooks(ctx, sd.sqlExec, sd.mutation, sd.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (sd *StorageDelete) ExecX(ctx context.Context) int {
+func (sd *S3ConfigDelete) ExecX(ctx context.Context) int {
 	n, err := sd.Exec(ctx)
 	if err != nil {
 		panic(err)
@@ -39,8 +39,8 @@ func (sd *StorageDelete) ExecX(ctx context.Context) int {
 	return n
 }
 
-func (sd *StorageDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(storage.Table, sqlgraph.NewFieldSpec(storage.FieldID, field.TypeInt))
+func (sd *S3ConfigDelete) sqlExec(ctx context.Context) (int, error) {
+	_spec := sqlgraph.NewDeleteSpec(s3config.Table, sqlgraph.NewFieldSpec(s3config.FieldID, field.TypeInt))
 	if ps := sd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -56,32 +56,32 @@ func (sd *StorageDelete) sqlExec(ctx context.Context) (int, error) {
 	return affected, err
 }
 
-// StorageDeleteOne is the builder for deleting a single Storage entity.
-type StorageDeleteOne struct {
-	sd *StorageDelete
+// S3ConfigDeleteOne is the builder for deleting a single S3Config entity.
+type S3ConfigDeleteOne struct {
+	sd *S3ConfigDelete
 }
 
-// Where appends a list predicates to the StorageDelete builder.
-func (sdo *StorageDeleteOne) Where(ps ...predicate.Storage) *StorageDeleteOne {
+// Where appends a list predicates to the S3ConfigDelete builder.
+func (sdo *S3ConfigDeleteOne) Where(ps ...predicate.S3Config) *S3ConfigDeleteOne {
 	sdo.sd.mutation.Where(ps...)
 	return sdo
 }
 
 // Exec executes the deletion query.
-func (sdo *StorageDeleteOne) Exec(ctx context.Context) error {
+func (sdo *S3ConfigDeleteOne) Exec(ctx context.Context) error {
 	n, err := sdo.sd.Exec(ctx)
 	switch {
 	case err != nil:
 		return err
 	case n == 0:
-		return &NotFoundError{storage.Label}
+		return &NotFoundError{s3config.Label}
 	default:
 		return nil
 	}
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (sdo *StorageDeleteOne) ExecX(ctx context.Context) {
+func (sdo *S3ConfigDeleteOne) ExecX(ctx context.Context) {
 	if err := sdo.Exec(ctx); err != nil {
 		panic(err)
 	}

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ca-x/vaultwarden-syncer/ent"
+	entstorage "github.com/ca-x/vaultwarden-syncer/ent/storage"
 	"github.com/ca-x/vaultwarden-syncer/ent/syncjob"
 	"github.com/ca-x/vaultwarden-syncer/internal/backup"
 	storageProvider "github.com/ca-x/vaultwarden-syncer/internal/storage"
@@ -414,23 +415,46 @@ func (s *Service) updateJobStatus(ctx context.Context, jobID int, status syncjob
 }
 
 func (s *Service) createStorageProvider(storage *ent.Storage) (storageProvider.Provider, error) {
-	switch storage.Type {
+	// Load storage with its config edges
+	loadedStorage, err := s.client.Storage.Query().
+		Where(entstorage.IDEQ(storage.ID)).
+		WithWebdavConfig().
+		WithS3Config().
+		Only(context.Background())
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to load storage with configs: %w", err)
+	}
+
+	switch loadedStorage.Type {
 	case "webdav":
-		var config storageProvider.WebDAVConfig
-		if err := mapConfig(storage.Config, &config); err != nil {
-			return nil, fmt.Errorf("failed to parse WebDAV config: %w", err)
+		if loadedStorage.Edges.WebdavConfig == nil {
+			return nil, fmt.Errorf("WebDAV config not found for storage %s", loadedStorage.Name)
+		}
+
+		config := storageProvider.WebDAVConfig{
+			URL:      loadedStorage.Edges.WebdavConfig.URL,
+			Username: loadedStorage.Edges.WebdavConfig.Username,
+			Password: loadedStorage.Edges.WebdavConfig.Password,
 		}
 		return storageProvider.NewWebDAVProvider(config)
 
 	case "s3":
-		var config storageProvider.S3Config
-		if err := mapConfig(storage.Config, &config); err != nil {
-			return nil, fmt.Errorf("failed to parse S3 config: %w", err)
+		if loadedStorage.Edges.S3Config == nil {
+			return nil, fmt.Errorf("S3 config not found for storage %s", loadedStorage.Name)
+		}
+
+		config := storageProvider.S3Config{
+			Endpoint:        loadedStorage.Edges.S3Config.Endpoint,
+			AccessKeyID:     loadedStorage.Edges.S3Config.AccessKeyID,
+			SecretAccessKey: loadedStorage.Edges.S3Config.SecretAccessKey,
+			Region:          loadedStorage.Edges.S3Config.Region,
+			Bucket:          loadedStorage.Edges.S3Config.Bucket,
 		}
 		return storageProvider.NewS3Provider(config)
 
 	default:
-		return nil, fmt.Errorf("unsupported storage type: %s", storage.Type)
+		return nil, fmt.Errorf("unsupported storage type: %s", loadedStorage.Type)
 	}
 }
 

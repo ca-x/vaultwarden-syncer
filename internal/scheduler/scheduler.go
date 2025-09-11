@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/ca-x/vaultwarden-syncer/ent"
-	"github.com/ca-x/vaultwarden-syncer/ent/storage"
+	entstorage "github.com/ca-x/vaultwarden-syncer/ent/storage"
 	"github.com/ca-x/vaultwarden-syncer/internal/cleanup"
 	"github.com/ca-x/vaultwarden-syncer/internal/config"
 	"github.com/ca-x/vaultwarden-syncer/internal/sync"
@@ -113,7 +113,7 @@ func (s *Service) Stop() {
 func (s *Service) runSync(ctx context.Context) error {
 	storages, err := s.client.Storage.
 		Query().
-		Where(storage.Enabled(true)).
+		Where(entstorage.Enabled(true)).
 		All(ctx)
 
 	if err != nil {
@@ -151,7 +151,11 @@ func (s *Service) RunSyncNow(ctx context.Context) error {
 func (s *Service) runCleanup(ctx context.Context) error {
 	log.Println("Starting scheduled cleanup of old sync job records")
 
-	if err := s.cleanupService.CleanupOldSyncJobs(ctx); err != nil {
+	// 为清理操作设置超时，避免长时间阻塞
+	cleanupCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	if err := s.cleanupService.CleanupOldSyncJobs(cleanupCtx); err != nil {
 		return err
 	}
 
@@ -168,7 +172,7 @@ func (s *Service) RunCleanupNow(ctx context.Context) error {
 func (s *Service) HealthCheckAll(ctx context.Context) map[string]error {
 	storages, err := s.client.Storage.
 		Query().
-		Where(storage.Enabled(true)).
+		Where(entstorage.Enabled(true)).
 		All(ctx)
 
 	if err != nil {

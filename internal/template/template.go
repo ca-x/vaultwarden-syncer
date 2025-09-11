@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"github.com/ca-x/vaultwarden-syncer/ent"
-	"github.com/ca-x/vaultwarden-syncer/ent/storage"
+	storage "github.com/ca-x/vaultwarden-syncer/ent/storage"
 	"github.com/ca-x/vaultwarden-syncer/ent/syncjob"
 	"github.com/ca-x/vaultwarden-syncer/internal/i18n"
 	"github.com/ca-x/vaultwarden-syncer/internal/icons"
@@ -75,15 +75,15 @@ type StorageCardData struct {
 
 // DashboardData represents dashboard statistics
 type DashboardData struct {
-	StorageCount     int
-	LastSync         string
-	BackupSize       string
-	TotalBackups     int
-	SystemStatus     string
-	SyncStatus       string
-	SyncStatusClass  string
-	SyncStatusIcon   string
-	LastSyncError    string
+	StorageCount    int
+	LastSync        string
+	BackupSize      string
+	TotalBackups    int
+	SystemStatus    string
+	SyncStatus      string
+	SyncStatusClass string
+	SyncStatusIcon  string
+	LastSyncError   string
 }
 
 // New creates a new template manager with singleton pattern for efficiency
@@ -95,19 +95,19 @@ func New() (*Manager, error) {
 			err = fmt.Errorf("failed to initialize icon manager: %w", e)
 			return
 		}
-		
+
 		// Create template functions
 		funcMap := template.FuncMap{
-			"icon": iconMgr.Get,
+			"icon":          iconMgr.Get,
 			"iconWithClass": iconMgr.GetWithClass,
 		}
-		
+
 		tmpl, e := template.New("").Funcs(funcMap).ParseFS(Assets, "web/*.html")
 		if e != nil {
 			err = fmt.Errorf("failed to parse templates: %w", e)
 			return
 		}
-		
+
 		templateManager = &Manager{
 			templates:   tmpl,
 			iconManager: iconMgr,
@@ -337,10 +337,10 @@ func (m *Manager) RenderStorageCards(storages []*ent.Storage, client *ent.Client
 				Where(syncjob.HasStorageWith(storage.IDEQ(s.ID))).
 				Order(ent.Desc(syncjob.FieldCreatedAt)).
 				First(ctx)
-			
+
 			if err == nil {
 				lastSync = lastJob.CreatedAt.Format("2006-01-02 15:04")
-				
+
 				switch lastJob.Status {
 				case syncjob.StatusCompleted:
 					lastSyncStatus = translator.T(lang, "status.sync_success")
@@ -365,6 +365,32 @@ func (m *Manager) RenderStorageCards(storages []*ent.Storage, client *ent.Client
 			}
 		}
 
+		// Prepare config data based on storage type
+		config := make(map[string]interface{})
+
+		// Load the storage with its config edges
+		if client != nil {
+			ctx := context.Background()
+			loadedStorage, err := client.Storage.Query().
+				Where(storage.IDEQ(s.ID)).
+				WithWebdavConfig().
+				WithS3Config().
+				Only(ctx)
+
+			if err == nil {
+				if loadedStorage.Edges.WebdavConfig != nil {
+					config["url"] = loadedStorage.Edges.WebdavConfig.URL
+					config["username"] = loadedStorage.Edges.WebdavConfig.Username
+				} else if loadedStorage.Edges.S3Config != nil {
+					config["endpoint"] = loadedStorage.Edges.S3Config.Endpoint
+					config["access_key_id"] = loadedStorage.Edges.S3Config.AccessKeyID
+					config["secret_access_key"] = loadedStorage.Edges.S3Config.SecretAccessKey
+					config["region"] = loadedStorage.Edges.S3Config.Region
+					config["bucket"] = loadedStorage.Edges.S3Config.Bucket
+				}
+			}
+		}
+
 		cards = append(cards, StorageCardData{
 			ID:              s.ID,
 			Name:            s.Name,
@@ -373,7 +399,7 @@ func (m *Manager) RenderStorageCards(storages []*ent.Storage, client *ent.Client
 			StatusColor:     statusColor,
 			Created:         s.CreatedAt.Format("2006-01-02 15:04"),
 			Icon:            typeIcon,
-			Config:          s.Config,
+			Config:          config,
 			LastSync:        lastSync,
 			LastSyncStatus:  lastSyncStatus,
 			SyncStatusIcon:  syncStatusIcon,
@@ -410,6 +436,16 @@ func (m *Manager) renderLayout(data PageData) (string, error) {
 		return "", err
 	}
 	return output.String(), nil
+}
+
+// RenderLayout renders the main layout with content
+func (m *Manager) RenderLayout(data PageData) (string, error) {
+	return m.renderLayout(data)
+}
+
+// ExecuteTemplate executes a template with the given name
+func (m *Manager) ExecuteTemplate(buf *bytes.Buffer, name string, data interface{}) error {
+	return m.templates.ExecuteTemplate(buf, name, data)
 }
 
 // ServeStatic serves static files from embedded templates
@@ -450,7 +486,7 @@ func (m *Manager) CreateMessage(msgType, content string) *Message {
 	default:
 		icon = m.Icon("info")
 	}
-	
+
 	return &Message{
 		Type:    msgType,
 		Content: content,

@@ -32,6 +32,7 @@
     <p><strong>{{call .T "common.created"}}:</strong> {{.Created}}</p>
     <div class="storage-actions" style="display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap;">
         <button hx-post="/api/sync/{{.ID}}" hx-target="#result" class="btn btn-primary" style="flex: 1; min-width: 100px;"><iconify-icon icon="mdi:sync"></iconify-icon>{{call .T "storage.sync_now"}}</button>
+        <button hx-get="/storage/{{.ID}}/edit" hx-target="body" class="btn btn-secondary" style="flex: 1; min-width: 100px;"><iconify-icon icon="mdi:pencil"></iconify-icon>{{call .T "common.edit"}}</button>
         <button hx-delete="/api/storage/{{.ID}}" hx-target="#result" hx-confirm="{{call .T "storage.delete_confirm"}}" class="btn btn-danger" style="flex: 1; min-width: 100px;"><iconify-icon icon="mdi:delete"></iconify-icon>{{call .T "common.delete"}}</button>
     </div>
 </div>

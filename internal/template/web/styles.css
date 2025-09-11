@@ -1,5 +1,6 @@
 /* Apple Style Design for Vaultwarden Syncer */
 
+/* Light theme variables */
 :root {
     --apple-blue: #007AFF;
     --apple-green: #34C759;
@@ -7,10 +8,57 @@
     --apple-gray: #8E8E93;
     --apple-light-gray: #F2F2F7;
     --apple-dark: #1C1C1E;
+    
+    /* Glass effect variables */
     --glass-bg: rgba(255, 255, 255, 0.25);
     --glass-border: rgba(255, 255, 255, 0.3);
     --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    
+    /* Text colors */
+    --text-primary: white;
+    --text-secondary: rgba(255, 255, 255, 0.9);
+    --text-tertiary: rgba(255, 255, 255, 0.7);
+    
+    /* Background colors */
+    --bg-gradient-start: #667eea;
+    --bg-gradient-end: #764ba2;
+    --bg-radial-1: rgba(255, 255, 255, 0.2);
+    --bg-radial-2: rgba(255, 255, 255, 0.1);
+    
+    /* Component variables */
     --card-hover-transform: translateY(-4px);
+    
+    /* Icon colors */
+    --icon-color: #272636;
+}
+
+/* Dark theme variables */
+[data-theme="dark"] {
+    --apple-blue: #0a84ff;
+    --apple-green: #30d158;
+    --apple-red: #ff453a;
+    --apple-gray: #8e8e93;
+    --apple-light-gray: #1c1c1e;
+    --apple-dark: #f2f2f7;
+    
+    /* Glass effect variables */
+    --glass-bg: rgba(30, 30, 30, 0.25);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    
+    /* Text colors */
+    --text-primary: white;
+    --text-secondary: rgba(255, 255, 255, 0.9);
+    --text-tertiary: rgba(255, 255, 255, 0.7);
+    
+    /* Background colors */
+    --bg-gradient-start: #2c2c2e;
+    --bg-gradient-end: #3a3a3c;
+    --bg-radial-1: rgba(255, 255, 255, 0.05);
+    --bg-radial-2: rgba(255, 255, 255, 0.03);
+    
+    /* Icon colors */
+    --icon-color: #f0f0f0;
 }
 
 /* Global Styles */
@@ -19,11 +67,12 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
     position: relative;
     overflow-x: hidden;
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: var(--text-primary);
 }
 
 body::before {
@@ -34,8 +83,8 @@ body::before {
     width: 100%;
     height: 100%;
     background-image: 
-        radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.2) 0%, transparent 50%),
-        radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+        radial-gradient(circle at 25% 25%, var(--bg-radial-1) 0%, transparent 50%),
+        radial-gradient(circle at 75% 75%, var(--bg-radial-2) 0%, transparent 50%);
     pointer-events: none;
     z-index: 0;
 }
@@ -61,7 +110,7 @@ nav {
     border-radius: 16px;
     padding: 1rem 2rem;
     box-shadow: var(--glass-shadow);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s cubic-bezier(0.4, 0.2, 0.2, 1);
 }
 
 nav:hover {
@@ -85,13 +134,13 @@ nav ul li {
 }
 
 nav ul li strong {
-    color: white;
+    color: var(--text-primary);
     font-weight: 600;
     font-size: 1.1rem;
 }
 
 nav ul li a {
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--text-secondary);
     text-decoration: none;
     padding: 0.5rem 1rem;
     border-radius: 8px;
@@ -100,7 +149,7 @@ nav ul li a {
 
 nav ul li a:hover {
     background: rgba(255, 255, 255, 0.2);
-    color: white;
+    color: var(--text-primary);
     transform: scale(1.05);
 }
 
@@ -112,7 +161,7 @@ nav ul li a:hover {
     border: 1px solid var(--glass-border);
     border-radius: 20px;
     box-shadow: var(--glass-shadow);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s cubic-bezier(0.4, 0.2, 0.2, 1);
     position: relative;
     overflow: hidden;
 }
@@ -149,25 +198,25 @@ label {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 600;
-    color: white;
+    color: var(--text-primary);
     font-size: 0.95rem;
 }
 
 input, select, textarea {
     width: 100%;
     padding: 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid var(--glass-border);
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
-    color: white;
+    color: var(--text-primary);
     font-size: 1rem;
     transition: all 0.3s ease;
     box-sizing: border-box;
 }
 
 input::placeholder, textarea::placeholder {
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--text-tertiary);
 }
 
 input:focus, select:focus, textarea:focus {
@@ -179,15 +228,21 @@ input:focus, select:focus, textarea:focus {
 }
 
 select option {
-    background: #1C1C1E;
-    color: white;
+    background: var(--apple-light-gray);
+    color: var(--apple-dark);
 }
 
 small {
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--text-tertiary);
     font-size: 0.85rem;
     margin-top: 0.25rem;
     display: block;
+}
+
+.help-text {
+    display: block;
+    margin-top: 0.5rem;
+    color: var(--text-tertiary);
 }
 
 /* Button Styles */
@@ -195,11 +250,11 @@ button, .btn {
     padding: 1rem;
     border: none;
     border-radius: 12px;
-    color: white;
+    color: var(--text-primary);
     font-size: 1.1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s cubic-bezier(0.4, 0.2, 0.2, 1);
     text-decoration: none;
     display: inline-block;
     text-align: center;
@@ -243,22 +298,62 @@ button:active, .btn:active {
 
 .btn-outline {
     background: transparent;
-    border: 2px solid rgba(255, 255, 255, 0.5);
-    color: white;
+    border: 2px solid var(--glass-border);
+    color: var(--text-primary);
 }
 
 .btn-outline:hover {
     background: rgba(255, 255, 255, 0.1);
-    border-color: white;
+    border-color: var(--text-primary);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--glass-border);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
 .btn-full {
     width: 100%;
 }
 
+/* Theme toggle button styles */
+.theme-toggle-btn {
+    background: transparent;
+    border: none;
+    padding: 0.5rem;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: all 0.3s cubic-bezier(0.4, 0.2, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.theme-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+/* Button Group Styles */
+.button-group {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.button-group .btn {
+    flex: 1;
+    min-width: 120px;
+}
+
 /* Typography */
 h1, h2, h3, h4, h5, h6 {
-    color: white;
+    color: var(--text-primary);
     margin-bottom: 1rem;
 }
 
@@ -275,13 +370,17 @@ h2 {
     text-align: center;
 }
 
+.section-title {
+    color: var(--text-primary); /* 确保section标题颜色为白色 */
+}
+
 h3 {
     font-size: 1.2rem;
     font-weight: 600;
 }
 
 p {
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--text-secondary);
     line-height: 1.5;
 }
 
@@ -333,6 +432,108 @@ p {
     background: rgba(255, 59, 48, 0.1);
 }
 
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    text-align: left;
+}
+
+.stat-item {
+    padding: 0.5rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary); /* 确保文本颜色为白色 */
+}
+
+.stat-item strong {
+    color: var(--text-primary); /* 确保strong标签内的文本也是白色 */
+}
+
+/* Theme icon styles */
+.theme-icon {
+    fill: var(--icon-color);
+    vertical-align: middle;
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    box-shadow: var(--glass-shadow);
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.modal-body {
+    padding: 1.5rem;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.modal-footer {
+    padding: 1.5rem;
+    border-top: 1px solid var(--glass-border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     body {
@@ -379,6 +580,19 @@ p {
         padding: 0.75rem;
         font-size: 1rem;
     }
+    
+    .button-group {
+        flex-direction: column;
+    }
+    
+    .button-group .btn {
+        width: 100%;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 1rem;
+    }
 }
 
 /* Centered Layout for Auth Pages */
@@ -406,4 +620,34 @@ p {
         max-width: none;
         margin: 0;
     }
+}
+
+/* Icon Styles */
+.icon-white {
+    color: var(--text-primary);
+}
+
+.icon-info {
+    color: var(--apple-blue);
+}
+
+.icon-success {
+    color: var(--apple-green);
+}
+
+.icon-danger {
+    color: var(--apple-red);
+}
+
+.icon-warning {
+    color: #FF9500; /* Apple orange */
+}
+
+.icon-purple {
+    color: #AF52DE; /* Apple purple */
+}
+
+.icon-large {
+    font-size: 1.5em;
+    margin-right: 0.5rem;
 }

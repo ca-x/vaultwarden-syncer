@@ -15,9 +15,11 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/ca-x/vaultwarden-syncer/ent/s3config"
 	"github.com/ca-x/vaultwarden-syncer/ent/storage"
 	"github.com/ca-x/vaultwarden-syncer/ent/syncjob"
 	"github.com/ca-x/vaultwarden-syncer/ent/user"
+	"github.com/ca-x/vaultwarden-syncer/ent/webdavconfig"
 )
 
 // Client is the client that holds all ent builders.
@@ -25,12 +27,16 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// S3Config is the client for interacting with the S3Config builders.
+	S3Config *S3ConfigClient
 	// Storage is the client for interacting with the Storage builders.
 	Storage *StorageClient
 	// SyncJob is the client for interacting with the SyncJob builders.
 	SyncJob *SyncJobClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
+	// WebDAVConfig is the client for interacting with the WebDAVConfig builders.
+	WebDAVConfig *WebDAVConfigClient
 }
 
 // NewClient creates a new client configured with the given options.
@@ -42,9 +48,11 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.S3Config = NewS3ConfigClient(c.config)
 	c.Storage = NewStorageClient(c.config)
 	c.SyncJob = NewSyncJobClient(c.config)
 	c.User = NewUserClient(c.config)
+	c.WebDAVConfig = NewWebDAVConfigClient(c.config)
 }
 
 type (
@@ -135,11 +143,13 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:     ctx,
-		config:  cfg,
-		Storage: NewStorageClient(cfg),
-		SyncJob: NewSyncJobClient(cfg),
-		User:    NewUserClient(cfg),
+		ctx:          ctx,
+		config:       cfg,
+		S3Config:     NewS3ConfigClient(cfg),
+		Storage:      NewStorageClient(cfg),
+		SyncJob:      NewSyncJobClient(cfg),
+		User:         NewUserClient(cfg),
+		WebDAVConfig: NewWebDAVConfigClient(cfg),
 	}, nil
 }
 
@@ -157,18 +167,20 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:     ctx,
-		config:  cfg,
-		Storage: NewStorageClient(cfg),
-		SyncJob: NewSyncJobClient(cfg),
-		User:    NewUserClient(cfg),
+		ctx:          ctx,
+		config:       cfg,
+		S3Config:     NewS3ConfigClient(cfg),
+		Storage:      NewStorageClient(cfg),
+		SyncJob:      NewSyncJobClient(cfg),
+		User:         NewUserClient(cfg),
+		WebDAVConfig: NewWebDAVConfigClient(cfg),
 	}, nil
 }
 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Storage.
+//		S3Config.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -190,30 +202,187 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.S3Config.Use(hooks...)
 	c.Storage.Use(hooks...)
 	c.SyncJob.Use(hooks...)
 	c.User.Use(hooks...)
+	c.WebDAVConfig.Use(hooks...)
 }
 
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
+	c.S3Config.Intercept(interceptors...)
 	c.Storage.Intercept(interceptors...)
 	c.SyncJob.Intercept(interceptors...)
 	c.User.Intercept(interceptors...)
+	c.WebDAVConfig.Intercept(interceptors...)
 }
 
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *S3ConfigMutation:
+		return c.S3Config.mutate(ctx, m)
 	case *StorageMutation:
 		return c.Storage.mutate(ctx, m)
 	case *SyncJobMutation:
 		return c.SyncJob.mutate(ctx, m)
 	case *UserMutation:
 		return c.User.mutate(ctx, m)
+	case *WebDAVConfigMutation:
+		return c.WebDAVConfig.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// S3ConfigClient is a client for the S3Config schema.
+type S3ConfigClient struct {
+	config
+}
+
+// NewS3ConfigClient returns a client for the S3Config from the given config.
+func NewS3ConfigClient(c config) *S3ConfigClient {
+	return &S3ConfigClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `s3config.Hooks(f(g(h())))`.
+func (c *S3ConfigClient) Use(hooks ...Hook) {
+	c.hooks.S3Config = append(c.hooks.S3Config, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `s3config.Intercept(f(g(h())))`.
+func (c *S3ConfigClient) Intercept(interceptors ...Interceptor) {
+	c.inters.S3Config = append(c.inters.S3Config, interceptors...)
+}
+
+// Create returns a builder for creating a S3Config entity.
+func (c *S3ConfigClient) Create() *S3ConfigCreate {
+	mutation := newS3ConfigMutation(c.config, OpCreate)
+	return &S3ConfigCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of S3Config entities.
+func (c *S3ConfigClient) CreateBulk(builders ...*S3ConfigCreate) *S3ConfigCreateBulk {
+	return &S3ConfigCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *S3ConfigClient) MapCreateBulk(slice any, setFunc func(*S3ConfigCreate, int)) *S3ConfigCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &S3ConfigCreateBulk{err: fmt.Errorf("calling to S3ConfigClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*S3ConfigCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &S3ConfigCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for S3Config.
+func (c *S3ConfigClient) Update() *S3ConfigUpdate {
+	mutation := newS3ConfigMutation(c.config, OpUpdate)
+	return &S3ConfigUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *S3ConfigClient) UpdateOne(s *S3Config) *S3ConfigUpdateOne {
+	mutation := newS3ConfigMutation(c.config, OpUpdateOne, withS3Config(s))
+	return &S3ConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *S3ConfigClient) UpdateOneID(id int) *S3ConfigUpdateOne {
+	mutation := newS3ConfigMutation(c.config, OpUpdateOne, withS3ConfigID(id))
+	return &S3ConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for S3Config.
+func (c *S3ConfigClient) Delete() *S3ConfigDelete {
+	mutation := newS3ConfigMutation(c.config, OpDelete)
+	return &S3ConfigDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *S3ConfigClient) DeleteOne(s *S3Config) *S3ConfigDeleteOne {
+	return c.DeleteOneID(s.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *S3ConfigClient) DeleteOneID(id int) *S3ConfigDeleteOne {
+	builder := c.Delete().Where(s3config.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &S3ConfigDeleteOne{builder}
+}
+
+// Query returns a query builder for S3Config.
+func (c *S3ConfigClient) Query() *S3ConfigQuery {
+	return &S3ConfigQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeS3Config},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a S3Config entity by its id.
+func (c *S3ConfigClient) Get(ctx context.Context, id int) (*S3Config, error) {
+	return c.Query().Where(s3config.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *S3ConfigClient) GetX(ctx context.Context, id int) *S3Config {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryStorage queries the storage edge of a S3Config.
+func (c *S3ConfigClient) QueryStorage(s *S3Config) *StorageQuery {
+	query := (&StorageClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := s.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(s3config.Table, s3config.FieldID, id),
+			sqlgraph.To(storage.Table, storage.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, s3config.StorageTable, s3config.StorageColumn),
+		)
+		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *S3ConfigClient) Hooks() []Hook {
+	return c.hooks.S3Config
+}
+
+// Interceptors returns the client interceptors.
+func (c *S3ConfigClient) Interceptors() []Interceptor {
+	return c.inters.S3Config
+}
+
+func (c *S3ConfigClient) mutate(ctx context.Context, m *S3ConfigMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&S3ConfigCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&S3ConfigUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&S3ConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&S3ConfigDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown S3Config mutation op: %q", m.Op())
 	}
 }
 
@@ -272,8 +441,8 @@ func (c *StorageClient) Update() *StorageUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *StorageClient) UpdateOne(_m *Storage) *StorageUpdateOne {
-	mutation := newStorageMutation(c.config, OpUpdateOne, withStorage(_m))
+func (c *StorageClient) UpdateOne(s *Storage) *StorageUpdateOne {
+	mutation := newStorageMutation(c.config, OpUpdateOne, withStorage(s))
 	return &StorageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -290,8 +459,8 @@ func (c *StorageClient) Delete() *StorageDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *StorageClient) DeleteOne(_m *Storage) *StorageDeleteOne {
-	return c.DeleteOneID(_m.ID)
+func (c *StorageClient) DeleteOne(s *Storage) *StorageDeleteOne {
+	return c.DeleteOneID(s.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -326,16 +495,48 @@ func (c *StorageClient) GetX(ctx context.Context, id int) *Storage {
 }
 
 // QuerySyncJobs queries the sync_jobs edge of a Storage.
-func (c *StorageClient) QuerySyncJobs(_m *Storage) *SyncJobQuery {
+func (c *StorageClient) QuerySyncJobs(s *Storage) *SyncJobQuery {
 	query := (&SyncJobClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
+		id := s.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(storage.Table, storage.FieldID, id),
 			sqlgraph.To(syncjob.Table, syncjob.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, storage.SyncJobsTable, storage.SyncJobsColumn),
 		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryWebdavConfig queries the webdav_config edge of a Storage.
+func (c *StorageClient) QueryWebdavConfig(s *Storage) *WebDAVConfigQuery {
+	query := (&WebDAVConfigClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := s.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(storage.Table, storage.FieldID, id),
+			sqlgraph.To(webdavconfig.Table, webdavconfig.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, storage.WebdavConfigTable, storage.WebdavConfigColumn),
+		)
+		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryS3Config queries the s3_config edge of a Storage.
+func (c *StorageClient) QueryS3Config(s *Storage) *S3ConfigQuery {
+	query := (&S3ConfigClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := s.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(storage.Table, storage.FieldID, id),
+			sqlgraph.To(s3config.Table, s3config.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, storage.S3ConfigTable, storage.S3ConfigColumn),
+		)
+		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -421,8 +622,8 @@ func (c *SyncJobClient) Update() *SyncJobUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *SyncJobClient) UpdateOne(_m *SyncJob) *SyncJobUpdateOne {
-	mutation := newSyncJobMutation(c.config, OpUpdateOne, withSyncJob(_m))
+func (c *SyncJobClient) UpdateOne(sj *SyncJob) *SyncJobUpdateOne {
+	mutation := newSyncJobMutation(c.config, OpUpdateOne, withSyncJob(sj))
 	return &SyncJobUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -439,8 +640,8 @@ func (c *SyncJobClient) Delete() *SyncJobDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *SyncJobClient) DeleteOne(_m *SyncJob) *SyncJobDeleteOne {
-	return c.DeleteOneID(_m.ID)
+func (c *SyncJobClient) DeleteOne(sj *SyncJob) *SyncJobDeleteOne {
+	return c.DeleteOneID(sj.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -475,16 +676,16 @@ func (c *SyncJobClient) GetX(ctx context.Context, id int) *SyncJob {
 }
 
 // QueryStorage queries the storage edge of a SyncJob.
-func (c *SyncJobClient) QueryStorage(_m *SyncJob) *StorageQuery {
+func (c *SyncJobClient) QueryStorage(sj *SyncJob) *StorageQuery {
 	query := (&StorageClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
+		id := sj.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(syncjob.Table, syncjob.FieldID, id),
 			sqlgraph.To(storage.Table, storage.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, syncjob.StorageTable, syncjob.StorageColumn),
 		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(sj.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
@@ -570,8 +771,8 @@ func (c *UserClient) Update() *UserUpdate {
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *UserClient) UpdateOne(_m *User) *UserUpdateOne {
-	mutation := newUserMutation(c.config, OpUpdateOne, withUser(_m))
+func (c *UserClient) UpdateOne(u *User) *UserUpdateOne {
+	mutation := newUserMutation(c.config, OpUpdateOne, withUser(u))
 	return &UserUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -588,8 +789,8 @@ func (c *UserClient) Delete() *UserDelete {
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *UserClient) DeleteOne(_m *User) *UserDeleteOne {
-	return c.DeleteOneID(_m.ID)
+func (c *UserClient) DeleteOne(u *User) *UserDeleteOne {
+	return c.DeleteOneID(u.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
@@ -648,12 +849,161 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 	}
 }
 
+// WebDAVConfigClient is a client for the WebDAVConfig schema.
+type WebDAVConfigClient struct {
+	config
+}
+
+// NewWebDAVConfigClient returns a client for the WebDAVConfig from the given config.
+func NewWebDAVConfigClient(c config) *WebDAVConfigClient {
+	return &WebDAVConfigClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `webdavconfig.Hooks(f(g(h())))`.
+func (c *WebDAVConfigClient) Use(hooks ...Hook) {
+	c.hooks.WebDAVConfig = append(c.hooks.WebDAVConfig, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `webdavconfig.Intercept(f(g(h())))`.
+func (c *WebDAVConfigClient) Intercept(interceptors ...Interceptor) {
+	c.inters.WebDAVConfig = append(c.inters.WebDAVConfig, interceptors...)
+}
+
+// Create returns a builder for creating a WebDAVConfig entity.
+func (c *WebDAVConfigClient) Create() *WebDAVConfigCreate {
+	mutation := newWebDAVConfigMutation(c.config, OpCreate)
+	return &WebDAVConfigCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of WebDAVConfig entities.
+func (c *WebDAVConfigClient) CreateBulk(builders ...*WebDAVConfigCreate) *WebDAVConfigCreateBulk {
+	return &WebDAVConfigCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *WebDAVConfigClient) MapCreateBulk(slice any, setFunc func(*WebDAVConfigCreate, int)) *WebDAVConfigCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &WebDAVConfigCreateBulk{err: fmt.Errorf("calling to WebDAVConfigClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*WebDAVConfigCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &WebDAVConfigCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for WebDAVConfig.
+func (c *WebDAVConfigClient) Update() *WebDAVConfigUpdate {
+	mutation := newWebDAVConfigMutation(c.config, OpUpdate)
+	return &WebDAVConfigUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *WebDAVConfigClient) UpdateOne(wdc *WebDAVConfig) *WebDAVConfigUpdateOne {
+	mutation := newWebDAVConfigMutation(c.config, OpUpdateOne, withWebDAVConfig(wdc))
+	return &WebDAVConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *WebDAVConfigClient) UpdateOneID(id int) *WebDAVConfigUpdateOne {
+	mutation := newWebDAVConfigMutation(c.config, OpUpdateOne, withWebDAVConfigID(id))
+	return &WebDAVConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for WebDAVConfig.
+func (c *WebDAVConfigClient) Delete() *WebDAVConfigDelete {
+	mutation := newWebDAVConfigMutation(c.config, OpDelete)
+	return &WebDAVConfigDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *WebDAVConfigClient) DeleteOne(wdc *WebDAVConfig) *WebDAVConfigDeleteOne {
+	return c.DeleteOneID(wdc.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *WebDAVConfigClient) DeleteOneID(id int) *WebDAVConfigDeleteOne {
+	builder := c.Delete().Where(webdavconfig.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &WebDAVConfigDeleteOne{builder}
+}
+
+// Query returns a query builder for WebDAVConfig.
+func (c *WebDAVConfigClient) Query() *WebDAVConfigQuery {
+	return &WebDAVConfigQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeWebDAVConfig},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a WebDAVConfig entity by its id.
+func (c *WebDAVConfigClient) Get(ctx context.Context, id int) (*WebDAVConfig, error) {
+	return c.Query().Where(webdavconfig.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *WebDAVConfigClient) GetX(ctx context.Context, id int) *WebDAVConfig {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryStorage queries the storage edge of a WebDAVConfig.
+func (c *WebDAVConfigClient) QueryStorage(wdc *WebDAVConfig) *StorageQuery {
+	query := (&StorageClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := wdc.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(webdavconfig.Table, webdavconfig.FieldID, id),
+			sqlgraph.To(storage.Table, storage.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, webdavconfig.StorageTable, webdavconfig.StorageColumn),
+		)
+		fromV = sqlgraph.Neighbors(wdc.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *WebDAVConfigClient) Hooks() []Hook {
+	return c.hooks.WebDAVConfig
+}
+
+// Interceptors returns the client interceptors.
+func (c *WebDAVConfigClient) Interceptors() []Interceptor {
+	return c.inters.WebDAVConfig
+}
+
+func (c *WebDAVConfigClient) mutate(ctx context.Context, m *WebDAVConfigMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&WebDAVConfigCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&WebDAVConfigUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&WebDAVConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&WebDAVConfigDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown WebDAVConfig mutation op: %q", m.Op())
+	}
+}
+
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Storage, SyncJob, User []ent.Hook
+		S3Config, Storage, SyncJob, User, WebDAVConfig []ent.Hook
 	}
 	inters struct {
-		Storage, SyncJob, User []ent.Interceptor
+		S3Config, Storage, SyncJob, User, WebDAVConfig []ent.Interceptor
 	}
 )

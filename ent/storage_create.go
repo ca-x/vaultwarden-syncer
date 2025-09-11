@@ -10,8 +10,10 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/ca-x/vaultwarden-syncer/ent/s3config"
 	"github.com/ca-x/vaultwarden-syncer/ent/storage"
 	"github.com/ca-x/vaultwarden-syncer/ent/syncjob"
+	"github.com/ca-x/vaultwarden-syncer/ent/webdavconfig"
 )
 
 // StorageCreate is the builder for creating a Storage entity.
@@ -22,94 +24,126 @@ type StorageCreate struct {
 }
 
 // SetName sets the "name" field.
-func (_c *StorageCreate) SetName(v string) *StorageCreate {
-	_c.mutation.SetName(v)
-	return _c
+func (sc *StorageCreate) SetName(s string) *StorageCreate {
+	sc.mutation.SetName(s)
+	return sc
 }
 
 // SetType sets the "type" field.
-func (_c *StorageCreate) SetType(v storage.Type) *StorageCreate {
-	_c.mutation.SetType(v)
-	return _c
-}
-
-// SetConfig sets the "config" field.
-func (_c *StorageCreate) SetConfig(v map[string]interface{}) *StorageCreate {
-	_c.mutation.SetConfig(v)
-	return _c
+func (sc *StorageCreate) SetType(s storage.Type) *StorageCreate {
+	sc.mutation.SetType(s)
+	return sc
 }
 
 // SetEnabled sets the "enabled" field.
-func (_c *StorageCreate) SetEnabled(v bool) *StorageCreate {
-	_c.mutation.SetEnabled(v)
-	return _c
+func (sc *StorageCreate) SetEnabled(b bool) *StorageCreate {
+	sc.mutation.SetEnabled(b)
+	return sc
 }
 
 // SetNillableEnabled sets the "enabled" field if the given value is not nil.
-func (_c *StorageCreate) SetNillableEnabled(v *bool) *StorageCreate {
-	if v != nil {
-		_c.SetEnabled(*v)
+func (sc *StorageCreate) SetNillableEnabled(b *bool) *StorageCreate {
+	if b != nil {
+		sc.SetEnabled(*b)
 	}
-	return _c
+	return sc
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (_c *StorageCreate) SetCreatedAt(v time.Time) *StorageCreate {
-	_c.mutation.SetCreatedAt(v)
-	return _c
+func (sc *StorageCreate) SetCreatedAt(t time.Time) *StorageCreate {
+	sc.mutation.SetCreatedAt(t)
+	return sc
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (_c *StorageCreate) SetNillableCreatedAt(v *time.Time) *StorageCreate {
-	if v != nil {
-		_c.SetCreatedAt(*v)
+func (sc *StorageCreate) SetNillableCreatedAt(t *time.Time) *StorageCreate {
+	if t != nil {
+		sc.SetCreatedAt(*t)
 	}
-	return _c
+	return sc
 }
 
 // SetUpdatedAt sets the "updated_at" field.
-func (_c *StorageCreate) SetUpdatedAt(v time.Time) *StorageCreate {
-	_c.mutation.SetUpdatedAt(v)
-	return _c
+func (sc *StorageCreate) SetUpdatedAt(t time.Time) *StorageCreate {
+	sc.mutation.SetUpdatedAt(t)
+	return sc
 }
 
 // SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (_c *StorageCreate) SetNillableUpdatedAt(v *time.Time) *StorageCreate {
-	if v != nil {
-		_c.SetUpdatedAt(*v)
+func (sc *StorageCreate) SetNillableUpdatedAt(t *time.Time) *StorageCreate {
+	if t != nil {
+		sc.SetUpdatedAt(*t)
 	}
-	return _c
+	return sc
 }
 
 // AddSyncJobIDs adds the "sync_jobs" edge to the SyncJob entity by IDs.
-func (_c *StorageCreate) AddSyncJobIDs(ids ...int) *StorageCreate {
-	_c.mutation.AddSyncJobIDs(ids...)
-	return _c
+func (sc *StorageCreate) AddSyncJobIDs(ids ...int) *StorageCreate {
+	sc.mutation.AddSyncJobIDs(ids...)
+	return sc
 }
 
 // AddSyncJobs adds the "sync_jobs" edges to the SyncJob entity.
-func (_c *StorageCreate) AddSyncJobs(v ...*SyncJob) *StorageCreate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
+func (sc *StorageCreate) AddSyncJobs(s ...*SyncJob) *StorageCreate {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
 	}
-	return _c.AddSyncJobIDs(ids...)
+	return sc.AddSyncJobIDs(ids...)
+}
+
+// SetWebdavConfigID sets the "webdav_config" edge to the WebDAVConfig entity by ID.
+func (sc *StorageCreate) SetWebdavConfigID(id int) *StorageCreate {
+	sc.mutation.SetWebdavConfigID(id)
+	return sc
+}
+
+// SetNillableWebdavConfigID sets the "webdav_config" edge to the WebDAVConfig entity by ID if the given value is not nil.
+func (sc *StorageCreate) SetNillableWebdavConfigID(id *int) *StorageCreate {
+	if id != nil {
+		sc = sc.SetWebdavConfigID(*id)
+	}
+	return sc
+}
+
+// SetWebdavConfig sets the "webdav_config" edge to the WebDAVConfig entity.
+func (sc *StorageCreate) SetWebdavConfig(w *WebDAVConfig) *StorageCreate {
+	return sc.SetWebdavConfigID(w.ID)
+}
+
+// SetS3ConfigID sets the "s3_config" edge to the S3Config entity by ID.
+func (sc *StorageCreate) SetS3ConfigID(id int) *StorageCreate {
+	sc.mutation.SetS3ConfigID(id)
+	return sc
+}
+
+// SetNillableS3ConfigID sets the "s3_config" edge to the S3Config entity by ID if the given value is not nil.
+func (sc *StorageCreate) SetNillableS3ConfigID(id *int) *StorageCreate {
+	if id != nil {
+		sc = sc.SetS3ConfigID(*id)
+	}
+	return sc
+}
+
+// SetS3Config sets the "s3_config" edge to the S3Config entity.
+func (sc *StorageCreate) SetS3Config(s *S3Config) *StorageCreate {
+	return sc.SetS3ConfigID(s.ID)
 }
 
 // Mutation returns the StorageMutation object of the builder.
-func (_c *StorageCreate) Mutation() *StorageMutation {
-	return _c.mutation
+func (sc *StorageCreate) Mutation() *StorageMutation {
+	return sc.mutation
 }
 
 // Save creates the Storage in the database.
-func (_c *StorageCreate) Save(ctx context.Context) (*Storage, error) {
-	_c.defaults()
-	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
+func (sc *StorageCreate) Save(ctx context.Context) (*Storage, error) {
+	sc.defaults()
+	return withHooks(ctx, sc.sqlSave, sc.mutation, sc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (_c *StorageCreate) SaveX(ctx context.Context) *Storage {
-	v, err := _c.Save(ctx)
+func (sc *StorageCreate) SaveX(ctx context.Context) *Storage {
+	v, err := sc.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -117,68 +151,65 @@ func (_c *StorageCreate) SaveX(ctx context.Context) *Storage {
 }
 
 // Exec executes the query.
-func (_c *StorageCreate) Exec(ctx context.Context) error {
-	_, err := _c.Save(ctx)
+func (sc *StorageCreate) Exec(ctx context.Context) error {
+	_, err := sc.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_c *StorageCreate) ExecX(ctx context.Context) {
-	if err := _c.Exec(ctx); err != nil {
+func (sc *StorageCreate) ExecX(ctx context.Context) {
+	if err := sc.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *StorageCreate) defaults() {
-	if _, ok := _c.mutation.Enabled(); !ok {
+func (sc *StorageCreate) defaults() {
+	if _, ok := sc.mutation.Enabled(); !ok {
 		v := storage.DefaultEnabled
-		_c.mutation.SetEnabled(v)
+		sc.mutation.SetEnabled(v)
 	}
-	if _, ok := _c.mutation.CreatedAt(); !ok {
+	if _, ok := sc.mutation.CreatedAt(); !ok {
 		v := storage.DefaultCreatedAt()
-		_c.mutation.SetCreatedAt(v)
+		sc.mutation.SetCreatedAt(v)
 	}
-	if _, ok := _c.mutation.UpdatedAt(); !ok {
+	if _, ok := sc.mutation.UpdatedAt(); !ok {
 		v := storage.DefaultUpdatedAt()
-		_c.mutation.SetUpdatedAt(v)
+		sc.mutation.SetUpdatedAt(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_c *StorageCreate) check() error {
-	if _, ok := _c.mutation.Name(); !ok {
+func (sc *StorageCreate) check() error {
+	if _, ok := sc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Storage.name"`)}
 	}
-	if _, ok := _c.mutation.GetType(); !ok {
+	if _, ok := sc.mutation.GetType(); !ok {
 		return &ValidationError{Name: "type", err: errors.New(`ent: missing required field "Storage.type"`)}
 	}
-	if v, ok := _c.mutation.GetType(); ok {
+	if v, ok := sc.mutation.GetType(); ok {
 		if err := storage.TypeValidator(v); err != nil {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Storage.type": %w`, err)}
 		}
 	}
-	if _, ok := _c.mutation.Config(); !ok {
-		return &ValidationError{Name: "config", err: errors.New(`ent: missing required field "Storage.config"`)}
-	}
-	if _, ok := _c.mutation.Enabled(); !ok {
+	if _, ok := sc.mutation.Enabled(); !ok {
 		return &ValidationError{Name: "enabled", err: errors.New(`ent: missing required field "Storage.enabled"`)}
 	}
-	if _, ok := _c.mutation.CreatedAt(); !ok {
+	if _, ok := sc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Storage.created_at"`)}
 	}
-	if _, ok := _c.mutation.UpdatedAt(); !ok {
+	if _, ok := sc.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Storage.updated_at"`)}
 	}
 	return nil
 }
 
-func (_c *StorageCreate) sqlSave(ctx context.Context) (*Storage, error) {
-	if err := _c.check(); err != nil {
+func (sc *StorageCreate) sqlSave(ctx context.Context) (*Storage, error) {
+	if err := sc.check(); err != nil {
 		return nil, err
 	}
-	_node, _spec := _c.createSpec()
-	if err := sqlgraph.CreateNode(ctx, _c.driver, _spec); err != nil {
+	_node, _spec := sc.createSpec()
+	if err := sqlgraph.CreateNode(ctx, sc.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -186,41 +217,37 @@ func (_c *StorageCreate) sqlSave(ctx context.Context) (*Storage, error) {
 	}
 	id := _spec.ID.Value.(int64)
 	_node.ID = int(id)
-	_c.mutation.id = &_node.ID
-	_c.mutation.done = true
+	sc.mutation.id = &_node.ID
+	sc.mutation.done = true
 	return _node, nil
 }
 
-func (_c *StorageCreate) createSpec() (*Storage, *sqlgraph.CreateSpec) {
+func (sc *StorageCreate) createSpec() (*Storage, *sqlgraph.CreateSpec) {
 	var (
-		_node = &Storage{config: _c.config}
+		_node = &Storage{config: sc.config}
 		_spec = sqlgraph.NewCreateSpec(storage.Table, sqlgraph.NewFieldSpec(storage.FieldID, field.TypeInt))
 	)
-	if value, ok := _c.mutation.Name(); ok {
+	if value, ok := sc.mutation.Name(); ok {
 		_spec.SetField(storage.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
-	if value, ok := _c.mutation.GetType(); ok {
+	if value, ok := sc.mutation.GetType(); ok {
 		_spec.SetField(storage.FieldType, field.TypeEnum, value)
 		_node.Type = value
 	}
-	if value, ok := _c.mutation.Config(); ok {
-		_spec.SetField(storage.FieldConfig, field.TypeJSON, value)
-		_node.Config = value
-	}
-	if value, ok := _c.mutation.Enabled(); ok {
+	if value, ok := sc.mutation.Enabled(); ok {
 		_spec.SetField(storage.FieldEnabled, field.TypeBool, value)
 		_node.Enabled = value
 	}
-	if value, ok := _c.mutation.CreatedAt(); ok {
+	if value, ok := sc.mutation.CreatedAt(); ok {
 		_spec.SetField(storage.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := _c.mutation.UpdatedAt(); ok {
+	if value, ok := sc.mutation.UpdatedAt(); ok {
 		_spec.SetField(storage.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
-	if nodes := _c.mutation.SyncJobsIDs(); len(nodes) > 0 {
+	if nodes := sc.mutation.SyncJobsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
@@ -229,6 +256,38 @@ func (_c *StorageCreate) createSpec() (*Storage, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(syncjob.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := sc.mutation.WebdavConfigIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   storage.WebdavConfigTable,
+			Columns: []string{storage.WebdavConfigColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(webdavconfig.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := sc.mutation.S3ConfigIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   storage.S3ConfigTable,
+			Columns: []string{storage.S3ConfigColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(s3config.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -247,16 +306,16 @@ type StorageCreateBulk struct {
 }
 
 // Save creates the Storage entities in the database.
-func (_c *StorageCreateBulk) Save(ctx context.Context) ([]*Storage, error) {
-	if _c.err != nil {
-		return nil, _c.err
+func (scb *StorageCreateBulk) Save(ctx context.Context) ([]*Storage, error) {
+	if scb.err != nil {
+		return nil, scb.err
 	}
-	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
-	nodes := make([]*Storage, len(_c.builders))
-	mutators := make([]Mutator, len(_c.builders))
-	for i := range _c.builders {
+	specs := make([]*sqlgraph.CreateSpec, len(scb.builders))
+	nodes := make([]*Storage, len(scb.builders))
+	mutators := make([]Mutator, len(scb.builders))
+	for i := range scb.builders {
 		func(i int, root context.Context) {
-			builder := _c.builders[i]
+			builder := scb.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*StorageMutation)
@@ -270,11 +329,11 @@ func (_c *StorageCreateBulk) Save(ctx context.Context) ([]*Storage, error) {
 				var err error
 				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
-					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
+					_, err = mutators[i+1].Mutate(root, scb.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, scb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{msg: err.Error(), wrap: err}
 						}
@@ -298,7 +357,7 @@ func (_c *StorageCreateBulk) Save(ctx context.Context) ([]*Storage, error) {
 		}(i, ctx)
 	}
 	if len(mutators) > 0 {
-		if _, err := mutators[0].Mutate(ctx, _c.builders[0].mutation); err != nil {
+		if _, err := mutators[0].Mutate(ctx, scb.builders[0].mutation); err != nil {
 			return nil, err
 		}
 	}
@@ -306,8 +365,8 @@ func (_c *StorageCreateBulk) Save(ctx context.Context) ([]*Storage, error) {
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_c *StorageCreateBulk) SaveX(ctx context.Context) []*Storage {
-	v, err := _c.Save(ctx)
+func (scb *StorageCreateBulk) SaveX(ctx context.Context) []*Storage {
+	v, err := scb.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -315,14 +374,14 @@ func (_c *StorageCreateBulk) SaveX(ctx context.Context) []*Storage {
 }
 
 // Exec executes the query.
-func (_c *StorageCreateBulk) Exec(ctx context.Context) error {
-	_, err := _c.Save(ctx)
+func (scb *StorageCreateBulk) Exec(ctx context.Context) error {
+	_, err := scb.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_c *StorageCreateBulk) ExecX(ctx context.Context) {
-	if err := _c.Exec(ctx); err != nil {
+func (scb *StorageCreateBulk) ExecX(ctx context.Context) {
+	if err := scb.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

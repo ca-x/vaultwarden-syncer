@@ -13,62 +13,66 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/ca-x/vaultwarden-syncer/ent/predicate"
+	"github.com/ca-x/vaultwarden-syncer/ent/s3config"
 	"github.com/ca-x/vaultwarden-syncer/ent/storage"
 	"github.com/ca-x/vaultwarden-syncer/ent/syncjob"
+	"github.com/ca-x/vaultwarden-syncer/ent/webdavconfig"
 )
 
 // StorageQuery is the builder for querying Storage entities.
 type StorageQuery struct {
 	config
-	ctx          *QueryContext
-	order        []storage.OrderOption
-	inters       []Interceptor
-	predicates   []predicate.Storage
-	withSyncJobs *SyncJobQuery
+	ctx              *QueryContext
+	order            []storage.OrderOption
+	inters           []Interceptor
+	predicates       []predicate.Storage
+	withSyncJobs     *SyncJobQuery
+	withWebdavConfig *WebDAVConfigQuery
+	withS3Config     *S3ConfigQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
 // Where adds a new predicate for the StorageQuery builder.
-func (_q *StorageQuery) Where(ps ...predicate.Storage) *StorageQuery {
-	_q.predicates = append(_q.predicates, ps...)
-	return _q
+func (sq *StorageQuery) Where(ps ...predicate.Storage) *StorageQuery {
+	sq.predicates = append(sq.predicates, ps...)
+	return sq
 }
 
 // Limit the number of records to be returned by this query.
-func (_q *StorageQuery) Limit(limit int) *StorageQuery {
-	_q.ctx.Limit = &limit
-	return _q
+func (sq *StorageQuery) Limit(limit int) *StorageQuery {
+	sq.ctx.Limit = &limit
+	return sq
 }
 
 // Offset to start from.
-func (_q *StorageQuery) Offset(offset int) *StorageQuery {
-	_q.ctx.Offset = &offset
-	return _q
+func (sq *StorageQuery) Offset(offset int) *StorageQuery {
+	sq.ctx.Offset = &offset
+	return sq
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (_q *StorageQuery) Unique(unique bool) *StorageQuery {
-	_q.ctx.Unique = &unique
-	return _q
+func (sq *StorageQuery) Unique(unique bool) *StorageQuery {
+	sq.ctx.Unique = &unique
+	return sq
 }
 
 // Order specifies how the records should be ordered.
-func (_q *StorageQuery) Order(o ...storage.OrderOption) *StorageQuery {
-	_q.order = append(_q.order, o...)
-	return _q
+func (sq *StorageQuery) Order(o ...storage.OrderOption) *StorageQuery {
+	sq.order = append(sq.order, o...)
+	return sq
 }
 
 // QuerySyncJobs chains the current query on the "sync_jobs" edge.
-func (_q *StorageQuery) QuerySyncJobs() *SyncJobQuery {
-	query := (&SyncJobClient{config: _q.config}).Query()
+func (sq *StorageQuery) QuerySyncJobs() *SyncJobQuery {
+	query := (&SyncJobClient{config: sq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := _q.prepareQuery(ctx); err != nil {
+		if err := sq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := _q.sqlQuery(ctx)
+		selector := sq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -77,7 +81,51 @@ func (_q *StorageQuery) QuerySyncJobs() *SyncJobQuery {
 			sqlgraph.To(syncjob.Table, syncjob.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, storage.SyncJobsTable, storage.SyncJobsColumn),
 		)
-		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		fromU = sqlgraph.SetNeighbors(sq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryWebdavConfig chains the current query on the "webdav_config" edge.
+func (sq *StorageQuery) QueryWebdavConfig() *WebDAVConfigQuery {
+	query := (&WebDAVConfigClient{config: sq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := sq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := sq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(storage.Table, storage.FieldID, selector),
+			sqlgraph.To(webdavconfig.Table, webdavconfig.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, storage.WebdavConfigTable, storage.WebdavConfigColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(sq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryS3Config chains the current query on the "s3_config" edge.
+func (sq *StorageQuery) QueryS3Config() *S3ConfigQuery {
+	query := (&S3ConfigClient{config: sq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := sq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := sq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(storage.Table, storage.FieldID, selector),
+			sqlgraph.To(s3config.Table, s3config.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, storage.S3ConfigTable, storage.S3ConfigColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(sq.driver.Dialect(), step)
 		return fromU, nil
 	}
 	return query
@@ -85,8 +133,8 @@ func (_q *StorageQuery) QuerySyncJobs() *SyncJobQuery {
 
 // First returns the first Storage entity from the query.
 // Returns a *NotFoundError when no Storage was found.
-func (_q *StorageQuery) First(ctx context.Context) (*Storage, error) {
-	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
+func (sq *StorageQuery) First(ctx context.Context) (*Storage, error) {
+	nodes, err := sq.Limit(1).All(setContextOp(ctx, sq.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
@@ -97,8 +145,8 @@ func (_q *StorageQuery) First(ctx context.Context) (*Storage, error) {
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (_q *StorageQuery) FirstX(ctx context.Context) *Storage {
-	node, err := _q.First(ctx)
+func (sq *StorageQuery) FirstX(ctx context.Context) *Storage {
+	node, err := sq.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -107,9 +155,9 @@ func (_q *StorageQuery) FirstX(ctx context.Context) *Storage {
 
 // FirstID returns the first Storage ID from the query.
 // Returns a *NotFoundError when no Storage ID was found.
-func (_q *StorageQuery) FirstID(ctx context.Context) (id int, err error) {
+func (sq *StorageQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
+	if ids, err = sq.Limit(1).IDs(setContextOp(ctx, sq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
@@ -120,8 +168,8 @@ func (_q *StorageQuery) FirstID(ctx context.Context) (id int, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (_q *StorageQuery) FirstIDX(ctx context.Context) int {
-	id, err := _q.FirstID(ctx)
+func (sq *StorageQuery) FirstIDX(ctx context.Context) int {
+	id, err := sq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
 	}
@@ -131,8 +179,8 @@ func (_q *StorageQuery) FirstIDX(ctx context.Context) int {
 // Only returns a single Storage entity found by the query, ensuring it only returns one.
 // Returns a *NotSingularError when more than one Storage entity is found.
 // Returns a *NotFoundError when no Storage entities are found.
-func (_q *StorageQuery) Only(ctx context.Context) (*Storage, error) {
-	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
+func (sq *StorageQuery) Only(ctx context.Context) (*Storage, error) {
+	nodes, err := sq.Limit(2).All(setContextOp(ctx, sq.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -147,8 +195,8 @@ func (_q *StorageQuery) Only(ctx context.Context) (*Storage, error) {
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (_q *StorageQuery) OnlyX(ctx context.Context) *Storage {
-	node, err := _q.Only(ctx)
+func (sq *StorageQuery) OnlyX(ctx context.Context) *Storage {
+	node, err := sq.Only(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -158,9 +206,9 @@ func (_q *StorageQuery) OnlyX(ctx context.Context) *Storage {
 // OnlyID is like Only, but returns the only Storage ID in the query.
 // Returns a *NotSingularError when more than one Storage ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (_q *StorageQuery) OnlyID(ctx context.Context) (id int, err error) {
+func (sq *StorageQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
-	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
+	if ids, err = sq.Limit(2).IDs(setContextOp(ctx, sq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
 	switch len(ids) {
@@ -175,8 +223,8 @@ func (_q *StorageQuery) OnlyID(ctx context.Context) (id int, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (_q *StorageQuery) OnlyIDX(ctx context.Context) int {
-	id, err := _q.OnlyID(ctx)
+func (sq *StorageQuery) OnlyIDX(ctx context.Context) int {
+	id, err := sq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -184,18 +232,18 @@ func (_q *StorageQuery) OnlyIDX(ctx context.Context) int {
 }
 
 // All executes the query and returns a list of Storages.
-func (_q *StorageQuery) All(ctx context.Context) ([]*Storage, error) {
-	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
-	if err := _q.prepareQuery(ctx); err != nil {
+func (sq *StorageQuery) All(ctx context.Context) ([]*Storage, error) {
+	ctx = setContextOp(ctx, sq.ctx, ent.OpQueryAll)
+	if err := sq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
 	qr := querierAll[[]*Storage, *StorageQuery]()
-	return withInterceptors[[]*Storage](ctx, _q, qr, _q.inters)
+	return withInterceptors[[]*Storage](ctx, sq, qr, sq.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (_q *StorageQuery) AllX(ctx context.Context) []*Storage {
-	nodes, err := _q.All(ctx)
+func (sq *StorageQuery) AllX(ctx context.Context) []*Storage {
+	nodes, err := sq.All(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -203,20 +251,20 @@ func (_q *StorageQuery) AllX(ctx context.Context) []*Storage {
 }
 
 // IDs executes the query and returns a list of Storage IDs.
-func (_q *StorageQuery) IDs(ctx context.Context) (ids []int, err error) {
-	if _q.ctx.Unique == nil && _q.path != nil {
-		_q.Unique(true)
+func (sq *StorageQuery) IDs(ctx context.Context) (ids []int, err error) {
+	if sq.ctx.Unique == nil && sq.path != nil {
+		sq.Unique(true)
 	}
-	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
-	if err = _q.Select(storage.FieldID).Scan(ctx, &ids); err != nil {
+	ctx = setContextOp(ctx, sq.ctx, ent.OpQueryIDs)
+	if err = sq.Select(storage.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (_q *StorageQuery) IDsX(ctx context.Context) []int {
-	ids, err := _q.IDs(ctx)
+func (sq *StorageQuery) IDsX(ctx context.Context) []int {
+	ids, err := sq.IDs(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -224,17 +272,17 @@ func (_q *StorageQuery) IDsX(ctx context.Context) []int {
 }
 
 // Count returns the count of the given query.
-func (_q *StorageQuery) Count(ctx context.Context) (int, error) {
-	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
-	if err := _q.prepareQuery(ctx); err != nil {
+func (sq *StorageQuery) Count(ctx context.Context) (int, error) {
+	ctx = setContextOp(ctx, sq.ctx, ent.OpQueryCount)
+	if err := sq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, _q, querierCount[*StorageQuery](), _q.inters)
+	return withInterceptors[int](ctx, sq, querierCount[*StorageQuery](), sq.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (_q *StorageQuery) CountX(ctx context.Context) int {
-	count, err := _q.Count(ctx)
+func (sq *StorageQuery) CountX(ctx context.Context) int {
+	count, err := sq.Count(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -242,9 +290,9 @@ func (_q *StorageQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (_q *StorageQuery) Exist(ctx context.Context) (bool, error) {
-	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
-	switch _, err := _q.FirstID(ctx); {
+func (sq *StorageQuery) Exist(ctx context.Context) (bool, error) {
+	ctx = setContextOp(ctx, sq.ctx, ent.OpQueryExist)
+	switch _, err := sq.FirstID(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -255,8 +303,8 @@ func (_q *StorageQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (_q *StorageQuery) ExistX(ctx context.Context) bool {
-	exist, err := _q.Exist(ctx)
+func (sq *StorageQuery) ExistX(ctx context.Context) bool {
+	exist, err := sq.Exist(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -265,32 +313,56 @@ func (_q *StorageQuery) ExistX(ctx context.Context) bool {
 
 // Clone returns a duplicate of the StorageQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (_q *StorageQuery) Clone() *StorageQuery {
-	if _q == nil {
+func (sq *StorageQuery) Clone() *StorageQuery {
+	if sq == nil {
 		return nil
 	}
 	return &StorageQuery{
-		config:       _q.config,
-		ctx:          _q.ctx.Clone(),
-		order:        append([]storage.OrderOption{}, _q.order...),
-		inters:       append([]Interceptor{}, _q.inters...),
-		predicates:   append([]predicate.Storage{}, _q.predicates...),
-		withSyncJobs: _q.withSyncJobs.Clone(),
+		config:           sq.config,
+		ctx:              sq.ctx.Clone(),
+		order:            append([]storage.OrderOption{}, sq.order...),
+		inters:           append([]Interceptor{}, sq.inters...),
+		predicates:       append([]predicate.Storage{}, sq.predicates...),
+		withSyncJobs:     sq.withSyncJobs.Clone(),
+		withWebdavConfig: sq.withWebdavConfig.Clone(),
+		withS3Config:     sq.withS3Config.Clone(),
 		// clone intermediate query.
-		sql:  _q.sql.Clone(),
-		path: _q.path,
+		sql:  sq.sql.Clone(),
+		path: sq.path,
 	}
 }
 
 // WithSyncJobs tells the query-builder to eager-load the nodes that are connected to
 // the "sync_jobs" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *StorageQuery) WithSyncJobs(opts ...func(*SyncJobQuery)) *StorageQuery {
-	query := (&SyncJobClient{config: _q.config}).Query()
+func (sq *StorageQuery) WithSyncJobs(opts ...func(*SyncJobQuery)) *StorageQuery {
+	query := (&SyncJobClient{config: sq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withSyncJobs = query
-	return _q
+	sq.withSyncJobs = query
+	return sq
+}
+
+// WithWebdavConfig tells the query-builder to eager-load the nodes that are connected to
+// the "webdav_config" edge. The optional arguments are used to configure the query builder of the edge.
+func (sq *StorageQuery) WithWebdavConfig(opts ...func(*WebDAVConfigQuery)) *StorageQuery {
+	query := (&WebDAVConfigClient{config: sq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	sq.withWebdavConfig = query
+	return sq
+}
+
+// WithS3Config tells the query-builder to eager-load the nodes that are connected to
+// the "s3_config" edge. The optional arguments are used to configure the query builder of the edge.
+func (sq *StorageQuery) WithS3Config(opts ...func(*S3ConfigQuery)) *StorageQuery {
+	query := (&S3ConfigClient{config: sq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	sq.withS3Config = query
+	return sq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -307,10 +379,10 @@ func (_q *StorageQuery) WithSyncJobs(opts ...func(*SyncJobQuery)) *StorageQuery 
 //		GroupBy(storage.FieldName).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (_q *StorageQuery) GroupBy(field string, fields ...string) *StorageGroupBy {
-	_q.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &StorageGroupBy{build: _q}
-	grbuild.flds = &_q.ctx.Fields
+func (sq *StorageQuery) GroupBy(field string, fields ...string) *StorageGroupBy {
+	sq.ctx.Fields = append([]string{field}, fields...)
+	grbuild := &StorageGroupBy{build: sq}
+	grbuild.flds = &sq.ctx.Fields
 	grbuild.label = storage.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
@@ -328,58 +400,60 @@ func (_q *StorageQuery) GroupBy(field string, fields ...string) *StorageGroupBy 
 //	client.Storage.Query().
 //		Select(storage.FieldName).
 //		Scan(ctx, &v)
-func (_q *StorageQuery) Select(fields ...string) *StorageSelect {
-	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
-	sbuild := &StorageSelect{StorageQuery: _q}
+func (sq *StorageQuery) Select(fields ...string) *StorageSelect {
+	sq.ctx.Fields = append(sq.ctx.Fields, fields...)
+	sbuild := &StorageSelect{StorageQuery: sq}
 	sbuild.label = storage.Label
-	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
+	sbuild.flds, sbuild.scan = &sq.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
 // Aggregate returns a StorageSelect configured with the given aggregations.
-func (_q *StorageQuery) Aggregate(fns ...AggregateFunc) *StorageSelect {
-	return _q.Select().Aggregate(fns...)
+func (sq *StorageQuery) Aggregate(fns ...AggregateFunc) *StorageSelect {
+	return sq.Select().Aggregate(fns...)
 }
 
-func (_q *StorageQuery) prepareQuery(ctx context.Context) error {
-	for _, inter := range _q.inters {
+func (sq *StorageQuery) prepareQuery(ctx context.Context) error {
+	for _, inter := range sq.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
 		}
 		if trv, ok := inter.(Traverser); ok {
-			if err := trv.Traverse(ctx, _q); err != nil {
+			if err := trv.Traverse(ctx, sq); err != nil {
 				return err
 			}
 		}
 	}
-	for _, f := range _q.ctx.Fields {
+	for _, f := range sq.ctx.Fields {
 		if !storage.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
-	if _q.path != nil {
-		prev, err := _q.path(ctx)
+	if sq.path != nil {
+		prev, err := sq.path(ctx)
 		if err != nil {
 			return err
 		}
-		_q.sql = prev
+		sq.sql = prev
 	}
 	return nil
 }
 
-func (_q *StorageQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Storage, error) {
+func (sq *StorageQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Storage, error) {
 	var (
 		nodes       = []*Storage{}
-		_spec       = _q.querySpec()
-		loadedTypes = [1]bool{
-			_q.withSyncJobs != nil,
+		_spec       = sq.querySpec()
+		loadedTypes = [3]bool{
+			sq.withSyncJobs != nil,
+			sq.withWebdavConfig != nil,
+			sq.withS3Config != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Storage).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &Storage{config: _q.config}
+		node := &Storage{config: sq.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
@@ -387,23 +461,35 @@ func (_q *StorageQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Stor
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
-	if err := sqlgraph.QueryNodes(ctx, _q.driver, _spec); err != nil {
+	if err := sqlgraph.QueryNodes(ctx, sq.driver, _spec); err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := _q.withSyncJobs; query != nil {
-		if err := _q.loadSyncJobs(ctx, query, nodes,
+	if query := sq.withSyncJobs; query != nil {
+		if err := sq.loadSyncJobs(ctx, query, nodes,
 			func(n *Storage) { n.Edges.SyncJobs = []*SyncJob{} },
 			func(n *Storage, e *SyncJob) { n.Edges.SyncJobs = append(n.Edges.SyncJobs, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := sq.withWebdavConfig; query != nil {
+		if err := sq.loadWebdavConfig(ctx, query, nodes, nil,
+			func(n *Storage, e *WebDAVConfig) { n.Edges.WebdavConfig = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := sq.withS3Config; query != nil {
+		if err := sq.loadS3Config(ctx, query, nodes, nil,
+			func(n *Storage, e *S3Config) { n.Edges.S3Config = e }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (_q *StorageQuery) loadSyncJobs(ctx context.Context, query *SyncJobQuery, nodes []*Storage, init func(*Storage), assign func(*Storage, *SyncJob)) error {
+func (sq *StorageQuery) loadSyncJobs(ctx context.Context, query *SyncJobQuery, nodes []*Storage, init func(*Storage), assign func(*Storage, *SyncJob)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*Storage)
 	for i := range nodes {
@@ -434,25 +520,81 @@ func (_q *StorageQuery) loadSyncJobs(ctx context.Context, query *SyncJobQuery, n
 	}
 	return nil
 }
-
-func (_q *StorageQuery) sqlCount(ctx context.Context) (int, error) {
-	_spec := _q.querySpec()
-	_spec.Node.Columns = _q.ctx.Fields
-	if len(_q.ctx.Fields) > 0 {
-		_spec.Unique = _q.ctx.Unique != nil && *_q.ctx.Unique
+func (sq *StorageQuery) loadWebdavConfig(ctx context.Context, query *WebDAVConfigQuery, nodes []*Storage, init func(*Storage), assign func(*Storage, *WebDAVConfig)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Storage)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
 	}
-	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
+	query.withFKs = true
+	query.Where(predicate.WebDAVConfig(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(storage.WebdavConfigColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.storage_webdav_config
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "storage_webdav_config" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "storage_webdav_config" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (sq *StorageQuery) loadS3Config(ctx context.Context, query *S3ConfigQuery, nodes []*Storage, init func(*Storage), assign func(*Storage, *S3Config)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Storage)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+	}
+	query.withFKs = true
+	query.Where(predicate.S3Config(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(storage.S3ConfigColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.storage_s3_config
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "storage_s3_config" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "storage_s3_config" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
 }
 
-func (_q *StorageQuery) querySpec() *sqlgraph.QuerySpec {
+func (sq *StorageQuery) sqlCount(ctx context.Context) (int, error) {
+	_spec := sq.querySpec()
+	_spec.Node.Columns = sq.ctx.Fields
+	if len(sq.ctx.Fields) > 0 {
+		_spec.Unique = sq.ctx.Unique != nil && *sq.ctx.Unique
+	}
+	return sqlgraph.CountNodes(ctx, sq.driver, _spec)
+}
+
+func (sq *StorageQuery) querySpec() *sqlgraph.QuerySpec {
 	_spec := sqlgraph.NewQuerySpec(storage.Table, storage.Columns, sqlgraph.NewFieldSpec(storage.FieldID, field.TypeInt))
-	_spec.From = _q.sql
-	if unique := _q.ctx.Unique; unique != nil {
+	_spec.From = sq.sql
+	if unique := sq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
-	} else if _q.path != nil {
+	} else if sq.path != nil {
 		_spec.Unique = true
 	}
-	if fields := _q.ctx.Fields; len(fields) > 0 {
+	if fields := sq.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, storage.FieldID)
 		for i := range fields {
@@ -461,20 +603,20 @@ func (_q *StorageQuery) querySpec() *sqlgraph.QuerySpec {
 			}
 		}
 	}
-	if ps := _q.predicates; len(ps) > 0 {
+	if ps := sq.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if limit := _q.ctx.Limit; limit != nil {
+	if limit := sq.ctx.Limit; limit != nil {
 		_spec.Limit = *limit
 	}
-	if offset := _q.ctx.Offset; offset != nil {
+	if offset := sq.ctx.Offset; offset != nil {
 		_spec.Offset = *offset
 	}
-	if ps := _q.order; len(ps) > 0 {
+	if ps := sq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
@@ -484,33 +626,33 @@ func (_q *StorageQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (_q *StorageQuery) sqlQuery(ctx context.Context) *sql.Selector {
-	builder := sql.Dialect(_q.driver.Dialect())
+func (sq *StorageQuery) sqlQuery(ctx context.Context) *sql.Selector {
+	builder := sql.Dialect(sq.driver.Dialect())
 	t1 := builder.Table(storage.Table)
-	columns := _q.ctx.Fields
+	columns := sq.ctx.Fields
 	if len(columns) == 0 {
 		columns = storage.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
-	if _q.sql != nil {
-		selector = _q.sql
+	if sq.sql != nil {
+		selector = sq.sql
 		selector.Select(selector.Columns(columns...)...)
 	}
-	if _q.ctx.Unique != nil && *_q.ctx.Unique {
+	if sq.ctx.Unique != nil && *sq.ctx.Unique {
 		selector.Distinct()
 	}
-	for _, p := range _q.predicates {
+	for _, p := range sq.predicates {
 		p(selector)
 	}
-	for _, p := range _q.order {
+	for _, p := range sq.order {
 		p(selector)
 	}
-	if offset := _q.ctx.Offset; offset != nil {
+	if offset := sq.ctx.Offset; offset != nil {
 		// limit is mandatory for offset clause. We start
 		// with default value, and override it below if needed.
 		selector.Offset(*offset).Limit(math.MaxInt32)
 	}
-	if limit := _q.ctx.Limit; limit != nil {
+	if limit := sq.ctx.Limit; limit != nil {
 		selector.Limit(*limit)
 	}
 	return selector
@@ -523,41 +665,41 @@ type StorageGroupBy struct {
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (_g *StorageGroupBy) Aggregate(fns ...AggregateFunc) *StorageGroupBy {
-	_g.fns = append(_g.fns, fns...)
-	return _g
+func (sgb *StorageGroupBy) Aggregate(fns ...AggregateFunc) *StorageGroupBy {
+	sgb.fns = append(sgb.fns, fns...)
+	return sgb
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_g *StorageGroupBy) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
-	if err := _g.build.prepareQuery(ctx); err != nil {
+func (sgb *StorageGroupBy) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, sgb.build.ctx, ent.OpQueryGroupBy)
+	if err := sgb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*StorageQuery, *StorageGroupBy](ctx, _g.build, _g, _g.build.inters, v)
+	return scanWithInterceptors[*StorageQuery, *StorageGroupBy](ctx, sgb.build, sgb, sgb.build.inters, v)
 }
 
-func (_g *StorageGroupBy) sqlScan(ctx context.Context, root *StorageQuery, v any) error {
+func (sgb *StorageGroupBy) sqlScan(ctx context.Context, root *StorageQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
-	aggregation := make([]string, 0, len(_g.fns))
-	for _, fn := range _g.fns {
+	aggregation := make([]string, 0, len(sgb.fns))
+	for _, fn := range sgb.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
 	if len(selector.SelectedColumns()) == 0 {
-		columns := make([]string, 0, len(*_g.flds)+len(_g.fns))
-		for _, f := range *_g.flds {
+		columns := make([]string, 0, len(*sgb.flds)+len(sgb.fns))
+		for _, f := range *sgb.flds {
 			columns = append(columns, selector.C(f))
 		}
 		columns = append(columns, aggregation...)
 		selector.Select(columns...)
 	}
-	selector.GroupBy(selector.Columns(*_g.flds...)...)
+	selector.GroupBy(selector.Columns(*sgb.flds...)...)
 	if err := selector.Err(); err != nil {
 		return err
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := _g.build.driver.Query(ctx, query, args, rows); err != nil {
+	if err := sgb.build.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()
@@ -571,27 +713,27 @@ type StorageSelect struct {
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (_s *StorageSelect) Aggregate(fns ...AggregateFunc) *StorageSelect {
-	_s.fns = append(_s.fns, fns...)
-	return _s
+func (ss *StorageSelect) Aggregate(fns ...AggregateFunc) *StorageSelect {
+	ss.fns = append(ss.fns, fns...)
+	return ss
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_s *StorageSelect) Scan(ctx context.Context, v any) error {
-	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
-	if err := _s.prepareQuery(ctx); err != nil {
+func (ss *StorageSelect) Scan(ctx context.Context, v any) error {
+	ctx = setContextOp(ctx, ss.ctx, ent.OpQuerySelect)
+	if err := ss.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*StorageQuery, *StorageSelect](ctx, _s.StorageQuery, _s, _s.inters, v)
+	return scanWithInterceptors[*StorageQuery, *StorageSelect](ctx, ss.StorageQuery, ss, ss.inters, v)
 }
 
-func (_s *StorageSelect) sqlScan(ctx context.Context, root *StorageQuery, v any) error {
+func (ss *StorageSelect) sqlScan(ctx context.Context, root *StorageQuery, v any) error {
 	selector := root.sqlQuery(ctx)
-	aggregation := make([]string, 0, len(_s.fns))
-	for _, fn := range _s.fns {
+	aggregation := make([]string, 0, len(ss.fns))
+	for _, fn := range ss.fns {
 		aggregation = append(aggregation, fn(selector))
 	}
-	switch n := len(*_s.selector.flds); {
+	switch n := len(*ss.selector.flds); {
 	case n == 0 && len(aggregation) > 0:
 		selector.Select(aggregation...)
 	case n != 0 && len(aggregation) > 0:
@@ -599,7 +741,7 @@ func (_s *StorageSelect) sqlScan(ctx context.Context, root *StorageQuery, v any)
 	}
 	rows := &sql.Rows{}
 	query, args := selector.Query()
-	if err := _s.driver.Query(ctx, query, args, rows); err != nil {
+	if err := ss.driver.Query(ctx, query, args, rows); err != nil {
 		return err
 	}
 	defer rows.Close()

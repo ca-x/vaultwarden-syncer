@@ -24,151 +24,151 @@ type SyncJobUpdate struct {
 }
 
 // Where appends a list predicates to the SyncJobUpdate builder.
-func (_u *SyncJobUpdate) Where(ps ...predicate.SyncJob) *SyncJobUpdate {
-	_u.mutation.Where(ps...)
-	return _u
+func (sju *SyncJobUpdate) Where(ps ...predicate.SyncJob) *SyncJobUpdate {
+	sju.mutation.Where(ps...)
+	return sju
 }
 
 // SetStatus sets the "status" field.
-func (_u *SyncJobUpdate) SetStatus(v syncjob.Status) *SyncJobUpdate {
-	_u.mutation.SetStatus(v)
-	return _u
+func (sju *SyncJobUpdate) SetStatus(s syncjob.Status) *SyncJobUpdate {
+	sju.mutation.SetStatus(s)
+	return sju
 }
 
 // SetNillableStatus sets the "status" field if the given value is not nil.
-func (_u *SyncJobUpdate) SetNillableStatus(v *syncjob.Status) *SyncJobUpdate {
-	if v != nil {
-		_u.SetStatus(*v)
+func (sju *SyncJobUpdate) SetNillableStatus(s *syncjob.Status) *SyncJobUpdate {
+	if s != nil {
+		sju.SetStatus(*s)
 	}
-	return _u
+	return sju
 }
 
 // SetOperation sets the "operation" field.
-func (_u *SyncJobUpdate) SetOperation(v syncjob.Operation) *SyncJobUpdate {
-	_u.mutation.SetOperation(v)
-	return _u
+func (sju *SyncJobUpdate) SetOperation(s syncjob.Operation) *SyncJobUpdate {
+	sju.mutation.SetOperation(s)
+	return sju
 }
 
 // SetNillableOperation sets the "operation" field if the given value is not nil.
-func (_u *SyncJobUpdate) SetNillableOperation(v *syncjob.Operation) *SyncJobUpdate {
-	if v != nil {
-		_u.SetOperation(*v)
+func (sju *SyncJobUpdate) SetNillableOperation(s *syncjob.Operation) *SyncJobUpdate {
+	if s != nil {
+		sju.SetOperation(*s)
 	}
-	return _u
+	return sju
 }
 
 // SetMessage sets the "message" field.
-func (_u *SyncJobUpdate) SetMessage(v string) *SyncJobUpdate {
-	_u.mutation.SetMessage(v)
-	return _u
+func (sju *SyncJobUpdate) SetMessage(s string) *SyncJobUpdate {
+	sju.mutation.SetMessage(s)
+	return sju
 }
 
 // SetNillableMessage sets the "message" field if the given value is not nil.
-func (_u *SyncJobUpdate) SetNillableMessage(v *string) *SyncJobUpdate {
-	if v != nil {
-		_u.SetMessage(*v)
+func (sju *SyncJobUpdate) SetNillableMessage(s *string) *SyncJobUpdate {
+	if s != nil {
+		sju.SetMessage(*s)
 	}
-	return _u
+	return sju
 }
 
 // ClearMessage clears the value of the "message" field.
-func (_u *SyncJobUpdate) ClearMessage() *SyncJobUpdate {
-	_u.mutation.ClearMessage()
-	return _u
+func (sju *SyncJobUpdate) ClearMessage() *SyncJobUpdate {
+	sju.mutation.ClearMessage()
+	return sju
 }
 
 // SetStartedAt sets the "started_at" field.
-func (_u *SyncJobUpdate) SetStartedAt(v time.Time) *SyncJobUpdate {
-	_u.mutation.SetStartedAt(v)
-	return _u
+func (sju *SyncJobUpdate) SetStartedAt(t time.Time) *SyncJobUpdate {
+	sju.mutation.SetStartedAt(t)
+	return sju
 }
 
 // SetNillableStartedAt sets the "started_at" field if the given value is not nil.
-func (_u *SyncJobUpdate) SetNillableStartedAt(v *time.Time) *SyncJobUpdate {
-	if v != nil {
-		_u.SetStartedAt(*v)
+func (sju *SyncJobUpdate) SetNillableStartedAt(t *time.Time) *SyncJobUpdate {
+	if t != nil {
+		sju.SetStartedAt(*t)
 	}
-	return _u
+	return sju
 }
 
 // ClearStartedAt clears the value of the "started_at" field.
-func (_u *SyncJobUpdate) ClearStartedAt() *SyncJobUpdate {
-	_u.mutation.ClearStartedAt()
-	return _u
+func (sju *SyncJobUpdate) ClearStartedAt() *SyncJobUpdate {
+	sju.mutation.ClearStartedAt()
+	return sju
 }
 
 // SetCompletedAt sets the "completed_at" field.
-func (_u *SyncJobUpdate) SetCompletedAt(v time.Time) *SyncJobUpdate {
-	_u.mutation.SetCompletedAt(v)
-	return _u
+func (sju *SyncJobUpdate) SetCompletedAt(t time.Time) *SyncJobUpdate {
+	sju.mutation.SetCompletedAt(t)
+	return sju
 }
 
 // SetNillableCompletedAt sets the "completed_at" field if the given value is not nil.
-func (_u *SyncJobUpdate) SetNillableCompletedAt(v *time.Time) *SyncJobUpdate {
-	if v != nil {
-		_u.SetCompletedAt(*v)
+func (sju *SyncJobUpdate) SetNillableCompletedAt(t *time.Time) *SyncJobUpdate {
+	if t != nil {
+		sju.SetCompletedAt(*t)
 	}
-	return _u
+	return sju
 }
 
 // ClearCompletedAt clears the value of the "completed_at" field.
-func (_u *SyncJobUpdate) ClearCompletedAt() *SyncJobUpdate {
-	_u.mutation.ClearCompletedAt()
-	return _u
+func (sju *SyncJobUpdate) ClearCompletedAt() *SyncJobUpdate {
+	sju.mutation.ClearCompletedAt()
+	return sju
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (_u *SyncJobUpdate) SetCreatedAt(v time.Time) *SyncJobUpdate {
-	_u.mutation.SetCreatedAt(v)
-	return _u
+func (sju *SyncJobUpdate) SetCreatedAt(t time.Time) *SyncJobUpdate {
+	sju.mutation.SetCreatedAt(t)
+	return sju
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (_u *SyncJobUpdate) SetNillableCreatedAt(v *time.Time) *SyncJobUpdate {
-	if v != nil {
-		_u.SetCreatedAt(*v)
+func (sju *SyncJobUpdate) SetNillableCreatedAt(t *time.Time) *SyncJobUpdate {
+	if t != nil {
+		sju.SetCreatedAt(*t)
 	}
-	return _u
+	return sju
 }
 
 // SetStorageID sets the "storage" edge to the Storage entity by ID.
-func (_u *SyncJobUpdate) SetStorageID(id int) *SyncJobUpdate {
-	_u.mutation.SetStorageID(id)
-	return _u
+func (sju *SyncJobUpdate) SetStorageID(id int) *SyncJobUpdate {
+	sju.mutation.SetStorageID(id)
+	return sju
 }
 
 // SetNillableStorageID sets the "storage" edge to the Storage entity by ID if the given value is not nil.
-func (_u *SyncJobUpdate) SetNillableStorageID(id *int) *SyncJobUpdate {
+func (sju *SyncJobUpdate) SetNillableStorageID(id *int) *SyncJobUpdate {
 	if id != nil {
-		_u = _u.SetStorageID(*id)
+		sju = sju.SetStorageID(*id)
 	}
-	return _u
+	return sju
 }
 
 // SetStorage sets the "storage" edge to the Storage entity.
-func (_u *SyncJobUpdate) SetStorage(v *Storage) *SyncJobUpdate {
-	return _u.SetStorageID(v.ID)
+func (sju *SyncJobUpdate) SetStorage(s *Storage) *SyncJobUpdate {
+	return sju.SetStorageID(s.ID)
 }
 
 // Mutation returns the SyncJobMutation object of the builder.
-func (_u *SyncJobUpdate) Mutation() *SyncJobMutation {
-	return _u.mutation
+func (sju *SyncJobUpdate) Mutation() *SyncJobMutation {
+	return sju.mutation
 }
 
 // ClearStorage clears the "storage" edge to the Storage entity.
-func (_u *SyncJobUpdate) ClearStorage() *SyncJobUpdate {
-	_u.mutation.ClearStorage()
-	return _u
+func (sju *SyncJobUpdate) ClearStorage() *SyncJobUpdate {
+	sju.mutation.ClearStorage()
+	return sju
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (_u *SyncJobUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
+func (sju *SyncJobUpdate) Save(ctx context.Context) (int, error) {
+	return withHooks(ctx, sju.sqlSave, sju.mutation, sju.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_u *SyncJobUpdate) SaveX(ctx context.Context) int {
-	affected, err := _u.Save(ctx)
+func (sju *SyncJobUpdate) SaveX(ctx context.Context) int {
+	affected, err := sju.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -176,26 +176,26 @@ func (_u *SyncJobUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (_u *SyncJobUpdate) Exec(ctx context.Context) error {
-	_, err := _u.Save(ctx)
+func (sju *SyncJobUpdate) Exec(ctx context.Context) error {
+	_, err := sju.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_u *SyncJobUpdate) ExecX(ctx context.Context) {
-	if err := _u.Exec(ctx); err != nil {
+func (sju *SyncJobUpdate) ExecX(ctx context.Context) {
+	if err := sju.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_u *SyncJobUpdate) check() error {
-	if v, ok := _u.mutation.Status(); ok {
+func (sju *SyncJobUpdate) check() error {
+	if v, ok := sju.mutation.Status(); ok {
 		if err := syncjob.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "SyncJob.status": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.Operation(); ok {
+	if v, ok := sju.mutation.Operation(); ok {
 		if err := syncjob.OperationValidator(v); err != nil {
 			return &ValidationError{Name: "operation", err: fmt.Errorf(`ent: validator failed for field "SyncJob.operation": %w`, err)}
 		}
@@ -203,46 +203,46 @@ func (_u *SyncJobUpdate) check() error {
 	return nil
 }
 
-func (_u *SyncJobUpdate) sqlSave(ctx context.Context) (_node int, err error) {
-	if err := _u.check(); err != nil {
-		return _node, err
+func (sju *SyncJobUpdate) sqlSave(ctx context.Context) (n int, err error) {
+	if err := sju.check(); err != nil {
+		return n, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(syncjob.Table, syncjob.Columns, sqlgraph.NewFieldSpec(syncjob.FieldID, field.TypeInt))
-	if ps := _u.mutation.predicates; len(ps) > 0 {
+	if ps := sju.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := _u.mutation.Status(); ok {
+	if value, ok := sju.mutation.Status(); ok {
 		_spec.SetField(syncjob.FieldStatus, field.TypeEnum, value)
 	}
-	if value, ok := _u.mutation.Operation(); ok {
+	if value, ok := sju.mutation.Operation(); ok {
 		_spec.SetField(syncjob.FieldOperation, field.TypeEnum, value)
 	}
-	if value, ok := _u.mutation.Message(); ok {
+	if value, ok := sju.mutation.Message(); ok {
 		_spec.SetField(syncjob.FieldMessage, field.TypeString, value)
 	}
-	if _u.mutation.MessageCleared() {
+	if sju.mutation.MessageCleared() {
 		_spec.ClearField(syncjob.FieldMessage, field.TypeString)
 	}
-	if value, ok := _u.mutation.StartedAt(); ok {
+	if value, ok := sju.mutation.StartedAt(); ok {
 		_spec.SetField(syncjob.FieldStartedAt, field.TypeTime, value)
 	}
-	if _u.mutation.StartedAtCleared() {
+	if sju.mutation.StartedAtCleared() {
 		_spec.ClearField(syncjob.FieldStartedAt, field.TypeTime)
 	}
-	if value, ok := _u.mutation.CompletedAt(); ok {
+	if value, ok := sju.mutation.CompletedAt(); ok {
 		_spec.SetField(syncjob.FieldCompletedAt, field.TypeTime, value)
 	}
-	if _u.mutation.CompletedAtCleared() {
+	if sju.mutation.CompletedAtCleared() {
 		_spec.ClearField(syncjob.FieldCompletedAt, field.TypeTime)
 	}
-	if value, ok := _u.mutation.CreatedAt(); ok {
+	if value, ok := sju.mutation.CreatedAt(); ok {
 		_spec.SetField(syncjob.FieldCreatedAt, field.TypeTime, value)
 	}
-	if _u.mutation.StorageCleared() {
+	if sju.mutation.StorageCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -255,7 +255,7 @@ func (_u *SyncJobUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.StorageIDs(); len(nodes) > 0 {
+	if nodes := sju.mutation.StorageIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -271,7 +271,7 @@ func (_u *SyncJobUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
+	if n, err = sqlgraph.UpdateNodes(ctx, sju.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{syncjob.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -279,8 +279,8 @@ func (_u *SyncJobUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		return 0, err
 	}
-	_u.mutation.done = true
-	return _node, nil
+	sju.mutation.done = true
+	return n, nil
 }
 
 // SyncJobUpdateOne is the builder for updating a single SyncJob entity.
@@ -292,158 +292,158 @@ type SyncJobUpdateOne struct {
 }
 
 // SetStatus sets the "status" field.
-func (_u *SyncJobUpdateOne) SetStatus(v syncjob.Status) *SyncJobUpdateOne {
-	_u.mutation.SetStatus(v)
-	return _u
+func (sjuo *SyncJobUpdateOne) SetStatus(s syncjob.Status) *SyncJobUpdateOne {
+	sjuo.mutation.SetStatus(s)
+	return sjuo
 }
 
 // SetNillableStatus sets the "status" field if the given value is not nil.
-func (_u *SyncJobUpdateOne) SetNillableStatus(v *syncjob.Status) *SyncJobUpdateOne {
-	if v != nil {
-		_u.SetStatus(*v)
+func (sjuo *SyncJobUpdateOne) SetNillableStatus(s *syncjob.Status) *SyncJobUpdateOne {
+	if s != nil {
+		sjuo.SetStatus(*s)
 	}
-	return _u
+	return sjuo
 }
 
 // SetOperation sets the "operation" field.
-func (_u *SyncJobUpdateOne) SetOperation(v syncjob.Operation) *SyncJobUpdateOne {
-	_u.mutation.SetOperation(v)
-	return _u
+func (sjuo *SyncJobUpdateOne) SetOperation(s syncjob.Operation) *SyncJobUpdateOne {
+	sjuo.mutation.SetOperation(s)
+	return sjuo
 }
 
 // SetNillableOperation sets the "operation" field if the given value is not nil.
-func (_u *SyncJobUpdateOne) SetNillableOperation(v *syncjob.Operation) *SyncJobUpdateOne {
-	if v != nil {
-		_u.SetOperation(*v)
+func (sjuo *SyncJobUpdateOne) SetNillableOperation(s *syncjob.Operation) *SyncJobUpdateOne {
+	if s != nil {
+		sjuo.SetOperation(*s)
 	}
-	return _u
+	return sjuo
 }
 
 // SetMessage sets the "message" field.
-func (_u *SyncJobUpdateOne) SetMessage(v string) *SyncJobUpdateOne {
-	_u.mutation.SetMessage(v)
-	return _u
+func (sjuo *SyncJobUpdateOne) SetMessage(s string) *SyncJobUpdateOne {
+	sjuo.mutation.SetMessage(s)
+	return sjuo
 }
 
 // SetNillableMessage sets the "message" field if the given value is not nil.
-func (_u *SyncJobUpdateOne) SetNillableMessage(v *string) *SyncJobUpdateOne {
-	if v != nil {
-		_u.SetMessage(*v)
+func (sjuo *SyncJobUpdateOne) SetNillableMessage(s *string) *SyncJobUpdateOne {
+	if s != nil {
+		sjuo.SetMessage(*s)
 	}
-	return _u
+	return sjuo
 }
 
 // ClearMessage clears the value of the "message" field.
-func (_u *SyncJobUpdateOne) ClearMessage() *SyncJobUpdateOne {
-	_u.mutation.ClearMessage()
-	return _u
+func (sjuo *SyncJobUpdateOne) ClearMessage() *SyncJobUpdateOne {
+	sjuo.mutation.ClearMessage()
+	return sjuo
 }
 
 // SetStartedAt sets the "started_at" field.
-func (_u *SyncJobUpdateOne) SetStartedAt(v time.Time) *SyncJobUpdateOne {
-	_u.mutation.SetStartedAt(v)
-	return _u
+func (sjuo *SyncJobUpdateOne) SetStartedAt(t time.Time) *SyncJobUpdateOne {
+	sjuo.mutation.SetStartedAt(t)
+	return sjuo
 }
 
 // SetNillableStartedAt sets the "started_at" field if the given value is not nil.
-func (_u *SyncJobUpdateOne) SetNillableStartedAt(v *time.Time) *SyncJobUpdateOne {
-	if v != nil {
-		_u.SetStartedAt(*v)
+func (sjuo *SyncJobUpdateOne) SetNillableStartedAt(t *time.Time) *SyncJobUpdateOne {
+	if t != nil {
+		sjuo.SetStartedAt(*t)
 	}
-	return _u
+	return sjuo
 }
 
 // ClearStartedAt clears the value of the "started_at" field.
-func (_u *SyncJobUpdateOne) ClearStartedAt() *SyncJobUpdateOne {
-	_u.mutation.ClearStartedAt()
-	return _u
+func (sjuo *SyncJobUpdateOne) ClearStartedAt() *SyncJobUpdateOne {
+	sjuo.mutation.ClearStartedAt()
+	return sjuo
 }
 
 // SetCompletedAt sets the "completed_at" field.
-func (_u *SyncJobUpdateOne) SetCompletedAt(v time.Time) *SyncJobUpdateOne {
-	_u.mutation.SetCompletedAt(v)
-	return _u
+func (sjuo *SyncJobUpdateOne) SetCompletedAt(t time.Time) *SyncJobUpdateOne {
+	sjuo.mutation.SetCompletedAt(t)
+	return sjuo
 }
 
 // SetNillableCompletedAt sets the "completed_at" field if the given value is not nil.
-func (_u *SyncJobUpdateOne) SetNillableCompletedAt(v *time.Time) *SyncJobUpdateOne {
-	if v != nil {
-		_u.SetCompletedAt(*v)
+func (sjuo *SyncJobUpdateOne) SetNillableCompletedAt(t *time.Time) *SyncJobUpdateOne {
+	if t != nil {
+		sjuo.SetCompletedAt(*t)
 	}
-	return _u
+	return sjuo
 }
 
 // ClearCompletedAt clears the value of the "completed_at" field.
-func (_u *SyncJobUpdateOne) ClearCompletedAt() *SyncJobUpdateOne {
-	_u.mutation.ClearCompletedAt()
-	return _u
+func (sjuo *SyncJobUpdateOne) ClearCompletedAt() *SyncJobUpdateOne {
+	sjuo.mutation.ClearCompletedAt()
+	return sjuo
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (_u *SyncJobUpdateOne) SetCreatedAt(v time.Time) *SyncJobUpdateOne {
-	_u.mutation.SetCreatedAt(v)
-	return _u
+func (sjuo *SyncJobUpdateOne) SetCreatedAt(t time.Time) *SyncJobUpdateOne {
+	sjuo.mutation.SetCreatedAt(t)
+	return sjuo
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (_u *SyncJobUpdateOne) SetNillableCreatedAt(v *time.Time) *SyncJobUpdateOne {
-	if v != nil {
-		_u.SetCreatedAt(*v)
+func (sjuo *SyncJobUpdateOne) SetNillableCreatedAt(t *time.Time) *SyncJobUpdateOne {
+	if t != nil {
+		sjuo.SetCreatedAt(*t)
 	}
-	return _u
+	return sjuo
 }
 
 // SetStorageID sets the "storage" edge to the Storage entity by ID.
-func (_u *SyncJobUpdateOne) SetStorageID(id int) *SyncJobUpdateOne {
-	_u.mutation.SetStorageID(id)
-	return _u
+func (sjuo *SyncJobUpdateOne) SetStorageID(id int) *SyncJobUpdateOne {
+	sjuo.mutation.SetStorageID(id)
+	return sjuo
 }
 
 // SetNillableStorageID sets the "storage" edge to the Storage entity by ID if the given value is not nil.
-func (_u *SyncJobUpdateOne) SetNillableStorageID(id *int) *SyncJobUpdateOne {
+func (sjuo *SyncJobUpdateOne) SetNillableStorageID(id *int) *SyncJobUpdateOne {
 	if id != nil {
-		_u = _u.SetStorageID(*id)
+		sjuo = sjuo.SetStorageID(*id)
 	}
-	return _u
+	return sjuo
 }
 
 // SetStorage sets the "storage" edge to the Storage entity.
-func (_u *SyncJobUpdateOne) SetStorage(v *Storage) *SyncJobUpdateOne {
-	return _u.SetStorageID(v.ID)
+func (sjuo *SyncJobUpdateOne) SetStorage(s *Storage) *SyncJobUpdateOne {
+	return sjuo.SetStorageID(s.ID)
 }
 
 // Mutation returns the SyncJobMutation object of the builder.
-func (_u *SyncJobUpdateOne) Mutation() *SyncJobMutation {
-	return _u.mutation
+func (sjuo *SyncJobUpdateOne) Mutation() *SyncJobMutation {
+	return sjuo.mutation
 }
 
 // ClearStorage clears the "storage" edge to the Storage entity.
-func (_u *SyncJobUpdateOne) ClearStorage() *SyncJobUpdateOne {
-	_u.mutation.ClearStorage()
-	return _u
+func (sjuo *SyncJobUpdateOne) ClearStorage() *SyncJobUpdateOne {
+	sjuo.mutation.ClearStorage()
+	return sjuo
 }
 
 // Where appends a list predicates to the SyncJobUpdate builder.
-func (_u *SyncJobUpdateOne) Where(ps ...predicate.SyncJob) *SyncJobUpdateOne {
-	_u.mutation.Where(ps...)
-	return _u
+func (sjuo *SyncJobUpdateOne) Where(ps ...predicate.SyncJob) *SyncJobUpdateOne {
+	sjuo.mutation.Where(ps...)
+	return sjuo
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (_u *SyncJobUpdateOne) Select(field string, fields ...string) *SyncJobUpdateOne {
-	_u.fields = append([]string{field}, fields...)
-	return _u
+func (sjuo *SyncJobUpdateOne) Select(field string, fields ...string) *SyncJobUpdateOne {
+	sjuo.fields = append([]string{field}, fields...)
+	return sjuo
 }
 
 // Save executes the query and returns the updated SyncJob entity.
-func (_u *SyncJobUpdateOne) Save(ctx context.Context) (*SyncJob, error) {
-	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
+func (sjuo *SyncJobUpdateOne) Save(ctx context.Context) (*SyncJob, error) {
+	return withHooks(ctx, sjuo.sqlSave, sjuo.mutation, sjuo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_u *SyncJobUpdateOne) SaveX(ctx context.Context) *SyncJob {
-	node, err := _u.Save(ctx)
+func (sjuo *SyncJobUpdateOne) SaveX(ctx context.Context) *SyncJob {
+	node, err := sjuo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -451,26 +451,26 @@ func (_u *SyncJobUpdateOne) SaveX(ctx context.Context) *SyncJob {
 }
 
 // Exec executes the query on the entity.
-func (_u *SyncJobUpdateOne) Exec(ctx context.Context) error {
-	_, err := _u.Save(ctx)
+func (sjuo *SyncJobUpdateOne) Exec(ctx context.Context) error {
+	_, err := sjuo.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_u *SyncJobUpdateOne) ExecX(ctx context.Context) {
-	if err := _u.Exec(ctx); err != nil {
+func (sjuo *SyncJobUpdateOne) ExecX(ctx context.Context) {
+	if err := sjuo.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_u *SyncJobUpdateOne) check() error {
-	if v, ok := _u.mutation.Status(); ok {
+func (sjuo *SyncJobUpdateOne) check() error {
+	if v, ok := sjuo.mutation.Status(); ok {
 		if err := syncjob.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "SyncJob.status": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.Operation(); ok {
+	if v, ok := sjuo.mutation.Operation(); ok {
 		if err := syncjob.OperationValidator(v); err != nil {
 			return &ValidationError{Name: "operation", err: fmt.Errorf(`ent: validator failed for field "SyncJob.operation": %w`, err)}
 		}
@@ -478,17 +478,17 @@ func (_u *SyncJobUpdateOne) check() error {
 	return nil
 }
 
-func (_u *SyncJobUpdateOne) sqlSave(ctx context.Context) (_node *SyncJob, err error) {
-	if err := _u.check(); err != nil {
+func (sjuo *SyncJobUpdateOne) sqlSave(ctx context.Context) (_node *SyncJob, err error) {
+	if err := sjuo.check(); err != nil {
 		return _node, err
 	}
 	_spec := sqlgraph.NewUpdateSpec(syncjob.Table, syncjob.Columns, sqlgraph.NewFieldSpec(syncjob.FieldID, field.TypeInt))
-	id, ok := _u.mutation.ID()
+	id, ok := sjuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "SyncJob.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
-	if fields := _u.fields; len(fields) > 0 {
+	if fields := sjuo.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, syncjob.FieldID)
 		for _, f := range fields {
@@ -500,41 +500,41 @@ func (_u *SyncJobUpdateOne) sqlSave(ctx context.Context) (_node *SyncJob, err er
 			}
 		}
 	}
-	if ps := _u.mutation.predicates; len(ps) > 0 {
+	if ps := sjuo.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
 	}
-	if value, ok := _u.mutation.Status(); ok {
+	if value, ok := sjuo.mutation.Status(); ok {
 		_spec.SetField(syncjob.FieldStatus, field.TypeEnum, value)
 	}
-	if value, ok := _u.mutation.Operation(); ok {
+	if value, ok := sjuo.mutation.Operation(); ok {
 		_spec.SetField(syncjob.FieldOperation, field.TypeEnum, value)
 	}
-	if value, ok := _u.mutation.Message(); ok {
+	if value, ok := sjuo.mutation.Message(); ok {
 		_spec.SetField(syncjob.FieldMessage, field.TypeString, value)
 	}
-	if _u.mutation.MessageCleared() {
+	if sjuo.mutation.MessageCleared() {
 		_spec.ClearField(syncjob.FieldMessage, field.TypeString)
 	}
-	if value, ok := _u.mutation.StartedAt(); ok {
+	if value, ok := sjuo.mutation.StartedAt(); ok {
 		_spec.SetField(syncjob.FieldStartedAt, field.TypeTime, value)
 	}
-	if _u.mutation.StartedAtCleared() {
+	if sjuo.mutation.StartedAtCleared() {
 		_spec.ClearField(syncjob.FieldStartedAt, field.TypeTime)
 	}
-	if value, ok := _u.mutation.CompletedAt(); ok {
+	if value, ok := sjuo.mutation.CompletedAt(); ok {
 		_spec.SetField(syncjob.FieldCompletedAt, field.TypeTime, value)
 	}
-	if _u.mutation.CompletedAtCleared() {
+	if sjuo.mutation.CompletedAtCleared() {
 		_spec.ClearField(syncjob.FieldCompletedAt, field.TypeTime)
 	}
-	if value, ok := _u.mutation.CreatedAt(); ok {
+	if value, ok := sjuo.mutation.CreatedAt(); ok {
 		_spec.SetField(syncjob.FieldCreatedAt, field.TypeTime, value)
 	}
-	if _u.mutation.StorageCleared() {
+	if sjuo.mutation.StorageCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -547,7 +547,7 @@ func (_u *SyncJobUpdateOne) sqlSave(ctx context.Context) (_node *SyncJob, err er
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.StorageIDs(); len(nodes) > 0 {
+	if nodes := sjuo.mutation.StorageIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
@@ -563,10 +563,10 @@ func (_u *SyncJobUpdateOne) sqlSave(ctx context.Context) (_node *SyncJob, err er
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_node = &SyncJob{config: _u.config}
+	_node = &SyncJob{config: sjuo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
-	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
+	if err = sqlgraph.UpdateNode(ctx, sjuo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{syncjob.Label}
 		} else if sqlgraph.IsConstraintError(err) {
@@ -574,6 +574,6 @@ func (_u *SyncJobUpdateOne) sqlSave(ctx context.Context) (_node *SyncJob, err er
 		}
 		return nil, err
 	}
-	_u.mutation.done = true
+	sjuo.mutation.done = true
 	return _node, nil
 }

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/ca-x/vaultwarden-syncer/ent"
-	"github.com/ca-x/vaultwarden-syncer/ent/storage"
+	entstorage "github.com/ca-x/vaultwarden-syncer/ent/storage"
 	"github.com/ca-x/vaultwarden-syncer/ent/syncjob"
 	"github.com/ca-x/vaultwarden-syncer/internal/config"
 )
@@ -31,22 +31,65 @@ func (s *Service) CleanupOldSyncJobs(ctx context.Context) error {
 	}
 
 	cutoffTime := time.Now().AddDate(0, 0, -s.config.Sync.HistoryRetentionDays)
-	
-	log.Printf("Cleaning up sync job records older than %d days (before %s)", 
+
+	log.Printf("Cleaning up sync job records older than %d days (before %s)",
 		s.config.Sync.HistoryRetentionDays, cutoffTime.Format("2006-01-02 15:04:05"))
 
-	deletedCount, err := s.client.SyncJob.
-		Delete().
-		Where(syncjob.CreatedAtLT(cutoffTime)).
-		Exec(ctx)
+	// 分批删除记录以避免超时
+	batchSize := 1000
+	totalDeleted := 0
 
-	if err != nil {
-		log.Printf("Failed to cleanup old sync jobs: %v", err)
-		return err
+	for {
+		// 检查上下文是否已取消
+		select {
+		case <-ctx.Done():
+			log.Printf("Cleanup cancelled: %v", ctx.Err())
+			return ctx.Err()
+		default:
+		}
+
+		// 获取一批要删除的记录ID
+		ids, err := s.client.SyncJob.Query().
+			Where(syncjob.CreatedAtLT(cutoffTime)).
+			Limit(batchSize).
+			IDs(ctx)
+
+		if err != nil {
+			log.Printf("Failed to query sync jobs for cleanup: %v", err)
+			return err
+		}
+
+		// 如果没有更多记录要删除，退出循环
+		if len(ids) == 0 {
+			break
+		}
+
+		// 删除这批记录
+		deletedCount, err := s.client.SyncJob.Delete().Where(syncjob.IDIn(ids...)).Exec(ctx)
+		if err != nil {
+			log.Printf("Failed to delete sync jobs batch: %v", err)
+			return err
+		}
+
+		totalDeleted += deletedCount
+		log.Printf("Deleted %d sync job records in batch, total deleted: %d", deletedCount, totalDeleted)
+
+		// 如果删除的记录少于批次大小，说明已经删除完所有记录
+		if deletedCount < batchSize {
+			break
+		}
+
+		// 短暂休眠以避免过度占用数据库资源
+		select {
+		case <-ctx.Done():
+			log.Printf("Cleanup cancelled during batch processing: %v", ctx.Err())
+			return ctx.Err()
+		case <-time.After(100 * time.Millisecond):
+		}
 	}
 
-	if deletedCount > 0 {
-		log.Printf("Successfully cleaned up %d old sync job records", deletedCount)
+	if totalDeleted > 0 {
+		log.Printf("Successfully cleaned up %d old sync job records", totalDeleted)
 	} else {
 		log.Println("No old sync job records found to cleanup")
 	}
@@ -94,7 +137,7 @@ func (s *Service) GetSyncJobStats(ctx context.Context) (map[string]interface{}, 
 	oldestJob, _ = s.client.SyncJob.Query().
 		Order(ent.Asc(syncjob.FieldCreatedAt)).
 		First(ctx)
-	
+
 	newestJob, _ = s.client.SyncJob.Query().
 		Order(ent.Desc(syncjob.FieldCreatedAt)).
 		First(ctx)
@@ -126,23 +169,67 @@ func (s *Service) CleanupOldSyncJobsByStorage(ctx context.Context, storageID int
 	}
 
 	cutoffTime := time.Now().AddDate(0, 0, -s.config.Sync.HistoryRetentionDays)
-	
-	deletedCount, err := s.client.SyncJob.
-		Delete().
-		Where(
-			syncjob.And(
-				syncjob.HasStorageWith(storage.IDEQ(storageID)),
-				syncjob.CreatedAtLT(cutoffTime),
-			),
-		).
-		Exec(ctx)
 
-	if err != nil {
-		return err
+	// 分批删除记录以避免超时
+	batchSize := 1000
+	totalDeleted := 0
+
+	for {
+		// 检查上下文是否已取消
+		select {
+		case <-ctx.Done():
+			log.Printf("Cleanup for storage %d cancelled: %v", storageID, ctx.Err())
+			return ctx.Err()
+		default:
+		}
+
+		// 获取一批要删除的记录ID
+		ids, err := s.client.SyncJob.Query().
+			Where(
+				syncjob.And(
+					syncjob.HasStorageWith(entstorage.IDEQ(storageID)),
+					syncjob.CreatedAtLT(cutoffTime),
+				),
+			).
+			Limit(batchSize).
+			IDs(ctx)
+
+		if err != nil {
+			log.Printf("Failed to query sync jobs for storage %d cleanup: %v", storageID, err)
+			return err
+		}
+
+		// 如果没有更多记录要删除，退出循环
+		if len(ids) == 0 {
+			break
+		}
+
+		// 删除这批记录
+		deletedCount, err := s.client.SyncJob.Delete().Where(syncjob.IDIn(ids...)).Exec(ctx)
+		if err != nil {
+			log.Printf("Failed to delete sync jobs batch for storage %d: %v", storageID, err)
+			return err
+		}
+
+		totalDeleted += deletedCount
+		log.Printf("Deleted %d sync job records for storage %d in batch, total deleted: %d", deletedCount, storageID, totalDeleted)
+
+		// 如果删除的记录少于批次大小，说明已经删除完所有记录
+		if deletedCount < batchSize {
+			break
+		}
+
+		// 短暂休眠以避免过度占用数据库资源
+		select {
+		case <-ctx.Done():
+			log.Printf("Cleanup for storage %d cancelled during batch processing: %v", storageID, ctx.Err())
+			return ctx.Err()
+		case <-time.After(100 * time.Millisecond):
+		}
 	}
 
-	if deletedCount > 0 {
-		log.Printf("Cleaned up %d old sync job records for storage %d", deletedCount, storageID)
+	if totalDeleted > 0 {
+		log.Printf("Cleaned up %d old sync job records for storage %d", totalDeleted, storageID)
 	}
 
 	return nil
