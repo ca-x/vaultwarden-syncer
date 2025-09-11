@@ -1,39 +1,123 @@
 {{if eq (len .Cards) 0}}
-<div class="glass-card card-compact">
-    <p style="text-align: center; color: rgba(255, 255, 255, 0.7);"><iconify-icon icon="mdi:folder-open" style="margin-right: 0.5rem;"></iconify-icon>{{call .T "storage.no_backends"}}</p>
+<div class="empty-state">
+    <div class="empty-state-icon">
+        <iconify-icon icon="mdi:database-off-outline"></iconify-icon>
+    </div>
+    <div class="empty-state-content">
+        <h3>No storage backends configured</h3>
+        <p>Add your first storage backend to start backing up your Vaultwarden data</p>
+        <div class="empty-state-actions">
+            <button onclick="document.getElementById('storage_type').focus()" class="btn btn-primary">
+                <iconify-icon icon="mdi:plus"></iconify-icon>
+                Add Storage Backend
+            </button>
+        </div>
+    </div>
 </div>
 {{else}}
 {{range .Cards}}
-<div class="glass-card card-compact" style="margin-bottom: 1rem;">
-    <h3>{{.Icon}} {{.Name}}</h3>
-    <p><strong>{{call .T "common.type"}}:</strong> {{.Type}}</p>
-    {{if .Config}}
-        {{if eq .Type "webdav"}}
-            <p><strong>{{call .T "storage.webdav.url"}}:</strong> {{.Config.url}}</p>
-        {{else if eq .Type "s3"}}
-            <p><strong>{{call .T "storage.s3.endpoint"}}:</strong> {{if .Config.endpoint}}{{.Config.endpoint}}{{else}}AWS S3{{end}}</p>
-            <p><strong>{{call .T "storage.s3.region"}}:</strong> {{.Config.region}}</p>
-            <p><strong>{{call .T "storage.s3.bucket"}}:</strong> {{.Config.bucket}}</p>
-        {{end}}
-    {{end}}
-    <p><strong>{{call .T "common.status"}}:</strong> <span style="color: {{.StatusColor}};">{{.Status}}</span></p>
-    <div class="sync-info">
-        <p><strong>{{call .T "sync.last_sync"}}:</strong> {{.LastSync}}</p>
-        <p class="sync-status {{.SyncStatusClass}}">
-            <iconify-icon icon="{{.SyncStatusIcon}}" class="{{.SyncStatusClass}}"></iconify-icon>
-            {{.LastSyncStatus}}
-        </p>
-        {{if .SyncError}}
-        <div class="error-details">
-            <small class="icon-danger">{{.SyncError}}</small>
+<div class="storage-card" data-status="{{if .Enabled}}enabled{{else}}disabled{{end}}">
+    <div class="storage-card-header">
+        <div class="storage-info">
+            <div class="storage-icon">
+                {{if eq .Type "webdav"}}
+                    <iconify-icon icon="mdi:cloud-upload" class="type-icon webdav"></iconify-icon>
+                {{else if eq .Type "s3"}}
+                    <iconify-icon icon="mdi:aws" class="type-icon s3"></iconify-icon>
+                {{end}}
+            </div>
+            <div class="storage-details">
+                <h3 class="storage-name">{{.Name}}</h3>
+                <div class="storage-meta">
+                    <span class="storage-type">{{.Type}}</span>
+                    <span class="storage-status status-{{if .Enabled}}enabled{{else}}disabled{{end}}">
+                        {{if .Enabled}}
+                            <iconify-icon icon="mdi:check-circle"></iconify-icon>
+                            Enabled
+                        {{else}}
+                            <iconify-icon icon="mdi:pause-circle"></iconify-icon>
+                            Disabled
+                        {{end}}
+                    </span>
+                </div>
+            </div>
         </div>
-        {{end}}
+        <div class="storage-actions">
+            <div class="action-buttons">
+                <button hx-post="/api/sync/{{.ID}}" hx-target="#result" 
+                        class="btn btn-icon btn-primary" title="Sync Now"
+                        {{if not .Enabled}}disabled{{end}}>
+                    <iconify-icon icon="mdi:sync"></iconify-icon>
+                </button>
+                <button hx-get="/storage/{{.ID}}/edit" hx-target="body" 
+                        class="btn btn-icon btn-secondary" title="Edit">
+                    <iconify-icon icon="mdi:pencil"></iconify-icon>
+                </button>
+                <button hx-delete="/api/storage/{{.ID}}" hx-target="#result" 
+                        hx-confirm="Are you sure you want to delete this storage backend?"
+                        class="btn btn-icon btn-danger" title="Delete">
+                    <iconify-icon icon="mdi:delete"></iconify-icon>
+                </button>
+            </div>
+        </div>
     </div>
-    <p><strong>{{call .T "common.created"}}:</strong> {{.Created}}</p>
-    <div class="storage-actions" style="display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap;">
-        <button hx-post="/api/sync/{{.ID}}" hx-target="#result" class="btn btn-primary" style="flex: 1; min-width: 100px;"><iconify-icon icon="mdi:sync"></iconify-icon>{{call .T "storage.sync_now"}}</button>
-        <button hx-get="/storage/{{.ID}}/edit" hx-target="body" class="btn btn-secondary" style="flex: 1; min-width: 100px;"><iconify-icon icon="mdi:pencil"></iconify-icon>{{call .T "common.edit"}}</button>
-        <button hx-delete="/api/storage/{{.ID}}" hx-target="#result" hx-confirm="{{call .T "storage.delete_confirm"}}" class="btn btn-danger" style="flex: 1; min-width: 100px;"><iconify-icon icon="mdi:delete"></iconify-icon>{{call .T "common.delete"}}</button>
+    
+    <div class="storage-card-body">
+        {{if .Config}}
+            <div class="config-info">
+                {{if eq .Type "webdav"}}
+                    <div class="config-item">
+                        <iconify-icon icon="mdi:server" class="config-icon"></iconify-icon>
+                        <span class="config-label">Server:</span>
+                        <span class="config-value">{{.Config.url}}</span>
+                    </div>
+                {{else if eq .Type "s3"}}
+                    <div class="config-item">
+                        <iconify-icon icon="mdi:server" class="config-icon"></iconify-icon>
+                        <span class="config-label">Endpoint:</span>
+                        <span class="config-value">{{if .Config.endpoint}}{{.Config.endpoint}}{{else}}AWS S3{{end}}</span>
+                    </div>
+                    <div class="config-item">
+                        <iconify-icon icon="mdi:earth" class="config-icon"></iconify-icon>
+                        <span class="config-label">Region:</span>
+                        <span class="config-value">{{.Config.region}}</span>
+                    </div>
+                    <div class="config-item">
+                        <iconify-icon icon="mdi:bucket" class="config-icon"></iconify-icon>
+                        <span class="config-label">Bucket:</span>
+                        <span class="config-value">{{.Config.bucket}}</span>
+                    </div>
+                {{end}}
+            </div>
+        {{end}}
+        
+        <div class="sync-status-section">
+            <div class="sync-status-item">
+                <div class="status-indicator status-{{.SyncStatusClass}}">
+                    <iconify-icon icon="{{.SyncStatusIcon}}"></iconify-icon>
+                </div>
+                <div class="status-content">
+                    <div class="status-text">{{.LastSyncStatus}}</div>
+                    <div class="status-time">Last sync: {{.LastSync}}</div>
+                    {{if .SyncError}}
+                    <div class="status-error">
+                        <iconify-icon icon="mdi:alert-circle"></iconify-icon>
+                        {{.SyncError}}
+                    </div>
+                    {{end}}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="storage-card-footer">
+        <div class="storage-stats">
+            <div class="stat-item">
+                <iconify-icon icon="mdi:calendar-plus" class="stat-icon"></iconify-icon>
+                <span class="stat-label">Created:</span>
+                <span class="stat-value">{{.Created}}</span>
+            </div>
+        </div>
     </div>
 </div>
 {{end}}

@@ -1,78 +1,143 @@
-<h1><iconify-icon icon="mdi:database" class="icon-large icon-purple"></iconify-icon>{{call .T "storage.title"}}</h1>
+<!-- Storage Page Header -->
+<div class="page-header">
+    <div class="header-content">
+        <div class="header-icon">
+            <iconify-icon icon="mdi:database" class="icon-large"></iconify-icon>
+        </div>
+        <div class="header-text">
+            <h1>{{call .T "storage.title"}}</h1>
+            <p class="header-subtitle">Manage your backup destinations</p>
+        </div>
+    </div>
+</div>
 
-<div class="grid grid-2">
-    <section class="glass-card card">
-        <h2><iconify-icon icon="mdi:plus-circle" class="icon-success"></iconify-icon>{{call .T "common.add"}}</h2>
-        <form id="storage-form" hx-post="/api/storage" hx-target="#result">
-            <div class="form-group">
-                <label for="storage_name">{{call .T "storage.name"}}</label>
-                <input type="text" id="storage_name" name="name" placeholder="{{call .T "storage.name_placeholder"}}" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="storage_type">{{call .T "common.type"}}</label>
-                <select id="storage_type" name="type" required>
-                    <option value="">{{call .T "storage.select_type"}}</option>
-                    <option value="webdav">WebDAV</option>
-                    <option value="s3">S3</option>
-                </select>
-            </div>
-            
-            <!-- WebDAV specific fields -->
-            <div id="webdav-fields" class="storage-type-fields" style="display: none;">
-                <div class="form-group">
-                    <label for="webdav_url">{{call .T "storage.webdav.url"}}</label>
-                    <input type="url" id="webdav_url" name="webdav_url" placeholder="{{call .T "storage.webdav.url_placeholder"}}">
+<!-- Main Content -->
+<div class="main-content">
+    <!-- Add New Storage Section -->
+    <section class="add-storage-section">
+        <div class="section-header">
+            <h2><iconify-icon icon="mdi:plus-circle" class="section-icon"></iconify-icon>Add New Storage</h2>
+            <p class="section-description">Connect a new storage backend for your backups</p>
+        </div>
+        
+        <div class="form-container">
+            <form id="storage-form" hx-post="/api/storage" hx-target="#result" class="storage-form">
+                <!-- Basic Info -->
+                <div class="form-section">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="storage_name" class="form-label">Name</label>
+                            <input type="text" id="storage_name" name="name" 
+                                   class="form-input" placeholder="My Backup Storage" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="storage_type" class="form-label">Type</label>
+                            <select id="storage_type" name="type" class="form-select" required>
+                                <option value="">Choose storage type...</option>
+                                <option value="webdav">WebDAV</option>
+                                <option value="s3">Amazon S3 / Compatible</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="webdav_username">{{call .T "auth.username"}}</label>
-                    <input type="text" id="webdav_username" name="webdav_username" placeholder="{{call .T "auth.username"}}">
+
+                <!-- WebDAV Configuration -->
+                <div id="webdav-fields" class="storage-config webdav-config" style="display: none;">
+                    <div class="config-header">
+                        <iconify-icon icon="mdi:cloud-upload" class="config-icon"></iconify-icon>
+                        <h3>WebDAV Configuration</h3>
+                    </div>
+                    <div class="form-section">
+                        <div class="form-group">
+                            <label for="webdav_url" class="form-label">Server URL</label>
+                            <input type="url" id="webdav_url" name="webdav_url" 
+                                   class="form-input" placeholder="https://webdav.example.com/remote.php/dav/files/username/">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="webdav_username" class="form-label">Username</label>
+                                <input type="text" id="webdav_username" name="webdav_username" 
+                                       class="form-input" placeholder="your-username">
+                            </div>
+                            <div class="form-group">
+                                <label for="webdav_password" class="form-label">Password</label>
+                                <input type="password" id="webdav_password" name="webdav_password" 
+                                       class="form-input" placeholder="••••••••">
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="webdav_password">{{call .T "auth.password"}}</label>
-                    <input type="password" id="webdav_password" name="webdav_password" placeholder="{{call .T "auth.password"}}">
+
+                <!-- S3 Configuration -->
+                <div id="s3-fields" class="storage-config s3-config" style="display: none;">
+                    <div class="config-header">
+                        <iconify-icon icon="mdi:aws" class="config-icon"></iconify-icon>
+                        <h3>S3 Configuration</h3>
+                    </div>
+                    <div class="form-section">
+                        <div class="form-group">
+                            <label for="s3_endpoint" class="form-label">Endpoint <span class="optional">(Optional)</span></label>
+                            <input type="text" id="s3_endpoint" name="s3_endpoint" 
+                                   class="form-input" placeholder="s3.amazonaws.com">
+                            <small class="form-hint">Leave empty for AWS S3, or specify custom endpoint for S3-compatible services</small>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="s3_access_key_id" class="form-label">Access Key ID</label>
+                                <input type="text" id="s3_access_key_id" name="s3_access_key_id" 
+                                       class="form-input" placeholder="AKIAIOSFODNN7EXAMPLE">
+                            </div>
+                            <div class="form-group">
+                                <label for="s3_secret_access_key" class="form-label">Secret Access Key</label>
+                                <input type="password" id="s3_secret_access_key" name="s3_secret_access_key" 
+                                       class="form-input" placeholder="••••••••••••••••••••••••••••••••••••••••">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="s3_region" class="form-label">Region</label>
+                                <input type="text" id="s3_region" name="s3_region" 
+                                       class="form-input" placeholder="us-east-1">
+                            </div>
+                            <div class="form-group">
+                                <label for="s3_bucket" class="form-label">Bucket Name</label>
+                                <input type="text" id="s3_bucket" name="s3_bucket" 
+                                       class="form-input" placeholder="my-backup-bucket">
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            
-            <!-- S3 specific fields -->
-            <div id="s3-fields" class="storage-type-fields" style="display: none;">
-                <div class="form-group">
-                    <label for="s3_endpoint">{{call .T "storage.s3.endpoint"}}</label>
-                    <input type="text" id="s3_endpoint" name="s3_endpoint" placeholder="{{call .T "storage.s3.endpoint_placeholder"}}">
-                    <small>{{call .T "storage.s3.endpoint_hint"}}</small>
+
+                <!-- Settings -->
+                <div class="form-section">
+                    <div class="form-group checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="storage_enabled" name="enabled" checked>
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-text">Enable this storage immediately</span>
+                        </label>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="s3_access_key_id">{{call .T "storage.s3.access_key_id"}}</label>
-                    <input type="text" id="s3_access_key_id" name="s3_access_key_id" placeholder="{{call .T "storage.s3.access_key_id"}}">
+
+                <!-- Submit Button -->
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <iconify-icon icon="mdi:plus"></iconify-icon>
+                        Add Storage Backend
+                    </button>
                 </div>
-                <div class="form-group">
-                    <label for="s3_secret_access_key">{{call .T "storage.s3.secret_access_key"}}</label>
-                    <input type="password" id="s3_secret_access_key" name="s3_secret_access_key" placeholder="{{call .T "storage.s3.secret_access_key"}}">
-                </div>
-                <div class="form-group">
-                    <label for="s3_region">{{call .T "storage.s3.region"}}</label>
-                    <input type="text" id="s3_region" name="s3_region" placeholder="{{call .T "storage.s3.region_placeholder"}}">
-                </div>
-                <div class="form-group">
-                    <label for="s3_bucket">{{call .T "storage.s3.bucket"}}</label>
-                    <input type="text" id="s3_bucket" name="s3_bucket" placeholder="{{call .T "storage.s3.bucket_placeholder"}}">
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" id="storage_enabled" name="enabled" checked>
-                    {{call .T "storage.enabled"}}
-                </label>
-            </div>
-            
-            <button type="submit" class="btn btn-success btn-full">{{call .T "common.add"}}</button>
-        </form>
+            </form>
+        </div>
     </section>
-    
-    <section class="glass-card card">
-        <h2><iconify-icon icon="mdi:format-list-bulleted" class="icon-info"></iconify-icon>{{call .T "storage.existing"}}</h2>
-        <div id="storage-list">
+
+    <!-- Existing Storage Section -->
+    <section class="storage-list-section">
+        <div class="section-header">
+            <h2><iconify-icon icon="mdi:database-outline" class="section-icon"></iconify-icon>Your Storage Backends</h2>
+            <p class="section-description">Manage and monitor your configured storage destinations</p>
+        </div>
+        
+        <div id="storage-list" class="storage-grid">
             {{.StorageCards}}
         </div>
     </section>
@@ -81,10 +146,10 @@
 <div id="result" class="result"></div>
 
 <script>
-// Show/hide storage type specific fields
+// Show/hide storage type specific fields with smooth transitions
 document.getElementById('storage_type').addEventListener('change', function() {
-    // Hide all storage type fields
-    document.querySelectorAll('.storage-type-fields').forEach(function(el) {
+    // Hide all storage config fields
+    document.querySelectorAll('.storage-config').forEach(function(el) {
         el.style.display = 'none';
     });
     
@@ -92,43 +157,49 @@ document.getElementById('storage_type').addEventListener('change', function() {
     const selectedType = this.value;
     if (selectedType === 'webdav') {
         document.getElementById('webdav-fields').style.display = 'block';
+        document.getElementById('webdav-fields').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     } else if (selectedType === 's3') {
         document.getElementById('s3-fields').style.display = 'block';
+        document.getElementById('s3-fields').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 });
 
-// Handle form submission
-document.getElementById('storage-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
+// Handle form submission with validation
+document.getElementById('storage-form').addEventListener('htmx:before-request', function(event) {
     // Get form data
     const formData = new FormData(this);
     const type = formData.get('type');
     
     // Validate required fields based on storage type
     let isValid = true;
-    if (type === 'webdav') {
+    let errorMessage = '';
+    
+    if (!type) {
+        isValid = false;
+        errorMessage = 'Please select a storage type';
+    } else if (type === 'webdav') {
         if (!formData.get('webdav_url') || !formData.get('webdav_username') || !formData.get('webdav_password')) {
             isValid = false;
-            alert('Please fill in all required WebDAV fields');
+            errorMessage = 'Please fill in all required WebDAV fields (URL, username, and password)';
         }
     } else if (type === 's3') {
         if (!formData.get('s3_access_key_id') || !formData.get('s3_secret_access_key') || 
             !formData.get('s3_region') || !formData.get('s3_bucket')) {
             isValid = false;
-            alert('Please fill in all required S3 fields');
+            errorMessage = 'Please fill in all required S3 fields (access key, secret key, region, and bucket)';
         }
-    } else if (!type) {
-        isValid = false;
-        alert('Please select a storage type');
     }
     
-    // If validation failed, stop submission
+    // If validation failed, stop the request
     if (!isValid) {
-        return;
+        event.preventDefault();
+        document.getElementById('result').innerHTML = '<div class="result error">' + errorMessage + '</div>';
+        return false;
     }
-    
-    // Submit form via HTMX
-    htmx.trigger(this, 'submit');
+});
+
+// Clear result on form reset
+document.getElementById('storage-form').addEventListener('reset', function() {
+    document.getElementById('result').innerHTML = '';
 });
 </script>

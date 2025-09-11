@@ -354,36 +354,57 @@ func (h *Handler) Settings(c echo.Context) error {
 func (h *Handler) CreateStorage(c echo.Context) error {
 	// Parse form data
 	if err := c.Request().ParseForm(); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid form data"})
+		fmt.Printf("Form parsing error: %v\n", err)
+		return c.HTML(http.StatusBadRequest, `<div class="result error">Invalid form data</div>`)
 	}
 
 	name := c.FormValue("name")
 	storageType := c.FormValue("type")
 	enabled := c.FormValue("enabled") == "on"
 
+	fmt.Printf("Creating storage: name=%s, type=%s, enabled=%v\n", name, storageType, enabled)
+
 	// Validate required fields
 	if name == "" || storageType == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Name and type are required"})
+		return c.HTML(http.StatusBadRequest, `<div class="result error">Name and type are required</div>`)
+	}
+
+	// Validate storage type
+	if storageType != "webdav" && storageType != "s3" {
+		return c.HTML(http.StatusBadRequest, `<div class="result error">Invalid storage type</div>`)
 	}
 
 	// Start a transaction
 	tx, err := h.client.Tx(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to start transaction"})
+		fmt.Printf("Transaction creation error: %v\n", err)
+		return c.HTML(http.StatusInternalServerError, `<div class="result error">Failed to start database transaction</div>`)
 	}
 	defer tx.Rollback()
 
 	// Create the storage record
-	storage, err := tx.Storage.
+	storageBuilder := tx.Storage.
 		Create().
 		SetName(name).
-		SetType(storage.Type(storageType)).
-		SetEnabled(enabled).
-		Save(c.Request().Context())
+		SetEnabled(enabled)
 
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create storage: " + err.Error()})
+	// Convert string to storage.Type enum
+	switch storageType {
+	case "webdav":
+		storageBuilder.SetType(storage.TypeWebdav)
+	case "s3":
+		storageBuilder.SetType(storage.TypeS3)
+	default:
+		return c.HTML(http.StatusBadRequest, `<div class="result error">Invalid storage type</div>`)
 	}
+
+	createdStorage, err := storageBuilder.Save(c.Request().Context())
+	if err != nil {
+		fmt.Printf("Storage creation error: %v\n", err)
+		return c.HTML(http.StatusInternalServerError, `<div class="result error">Failed to create storage: `+err.Error()+`</div>`)
+	}
+
+	fmt.Printf("Storage created with ID: %d\n", createdStorage.ID)
 
 	// Create type-specific config based on storage type
 	if storageType == "webdav" {
@@ -391,9 +412,11 @@ func (h *Handler) CreateStorage(c echo.Context) error {
 		username := c.FormValue("webdav_username")
 		password := c.FormValue("webdav_password")
 
+		fmt.Printf("WebDAV config: url=%s, username=%s, password length=%d\n", url, username, len(password))
+
 		// Validate WebDAV required fields
 		if url == "" || username == "" || password == "" {
-			return c.JSON(http.StatusBadRequest, map[string]string{"error": "WebDAV requires URL, username, and password"})
+			return c.HTML(http.StatusBadRequest, `<div class="result error">WebDAV requires URL, username, and password</div>`)
 		}
 
 		// Create WebDAV config
@@ -402,11 +425,12 @@ func (h *Handler) CreateStorage(c echo.Context) error {
 			SetURL(url).
 			SetUsername(username).
 			SetPassword(password).
-			SetStorageID(storage.ID).
+			SetStorageID(createdStorage.ID).
 			Save(c.Request().Context())
 
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create WebDAV config: " + err.Error()})
+			fmt.Printf("WebDAV config creation error: %v\n", err)
+			return c.HTML(http.StatusInternalServerError, `<div class="result error">Failed to create WebDAV config: `+err.Error()+`</div>`)
 		}
 	} else if storageType == "s3" {
 		endpoint := c.FormValue("s3_endpoint")
@@ -415,9 +439,12 @@ func (h *Handler) CreateStorage(c echo.Context) error {
 		region := c.FormValue("s3_region")
 		bucket := c.FormValue("s3_bucket")
 
+		fmt.Printf("S3 config: endpoint=%s, accessKeyID=%s, region=%s, bucket=%s, secretKey length=%d\n", 
+			endpoint, accessKeyID, region, bucket, len(secretAccessKey))
+
 		// Validate S3 required fields (endpoint is optional)
 		if accessKeyID == "" || secretAccessKey == "" || region == "" || bucket == "" {
-			return c.JSON(http.StatusBadRequest, map[string]string{"error": "S3 requires access key ID, secret access key, region, and bucket"})
+			return c.HTML(http.StatusBadRequest, `<div class="result error">S3 requires access key ID, secret access key, region, and bucket</div>`)
 		}
 
 		// Create S3 config
@@ -427,7 +454,7 @@ func (h *Handler) CreateStorage(c echo.Context) error {
 			SetSecretAccessKey(secretAccessKey).
 			SetRegion(region).
 			SetBucket(bucket).
-			SetStorageID(storage.ID)
+			SetStorageID(createdStorage.ID)
 
 		if endpoint != "" {
 			s3Create.SetEndpoint(endpoint)
@@ -436,19 +463,24 @@ func (h *Handler) CreateStorage(c echo.Context) error {
 		_, err = s3Create.Save(c.Request().Context())
 
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create S3 config: " + err.Error()})
+			fmt.Printf("S3 config creation error: %v\n", err)
+			return c.HTML(http.StatusInternalServerError, `<div class="result error">Failed to create S3 config: `+err.Error()+`</div>`)
 		}
 	}
 
 	// Commit the transaction
 	if err := tx.Commit(); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to commit transaction: " + err.Error()})
+		fmt.Printf("Transaction commit error: %v\n", err)
+		return c.HTML(http.StatusInternalServerError, `<div class="result error">Failed to commit transaction: `+err.Error()+`</div>`)
 	}
+
+	fmt.Printf("Storage and config created successfully\n")
 
 	// Reload storage list to show the new storage
 	storages, err := h.client.Storage.Query().All(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to load storages"})
+		fmt.Printf("Storage list reload error: %v\n", err)
+		return c.HTML(http.StatusInternalServerError, `<div class="result error">Storage created but failed to reload list</div>`)
 	}
 
 	// Get language and translator from context
@@ -463,22 +495,34 @@ func (h *Handler) CreateStorage(c echo.Context) error {
 		storageCards, err := h.tmplManager.RenderStorageCards(storages, h.client, lang, translator)
 		if err == nil {
 			return c.HTML(http.StatusOK, fmt.Sprintf(`
-				<div style="color: green;">Storage created successfully!</div>
+				<div class="result success">
+					<iconify-icon icon="mdi:check-circle" class="icon-success"></iconify-icon>
+					Storage backend created successfully!
+				</div>
 				<script>
 					// Reset form
 					document.getElementById('storage-form').reset();
 					// Hide storage type fields
-					document.querySelectorAll('.storage-type-fields').forEach(function(el) {
+					document.querySelectorAll('.storage-config').forEach(function(el) {
 						el.style.display = 'none';
 					});
 					// Update storage list
 					document.getElementById('storage-list').innerHTML = %q;
+					// Clear any previous results after a delay
+					setTimeout(function() {
+						document.getElementById('result').innerHTML = '';
+					}, 5000);
 				</script>
 			`, storageCards))
+		} else {
+			fmt.Printf("Template rendering error: %v\n", err)
 		}
 	}
 
-	return c.HTML(http.StatusOK, `<div style="color: green;">Storage created successfully!</div>`)
+	return c.HTML(http.StatusOK, `<div class="result success">
+		<iconify-icon icon="mdi:check-circle" class="icon-success"></iconify-icon>
+		Storage backend created successfully!
+	</div>`)
 }
 
 // UpdateStorage updates an existing storage backend
