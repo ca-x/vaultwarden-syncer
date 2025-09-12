@@ -635,6 +635,20 @@ p {
     margin: 0 auto 1.5rem auto;
 }
 
+.form-actions {
+    text-align: center;
+    margin: 2rem 0;
+    display: flex;
+    justify-content: center;
+}
+
+.form-actions .btn {
+    min-width: 120px;
+    padding: 0.75rem 2rem;
+    width: auto;
+    max-width: 200px;
+}
+
 @media (max-width: 768px) {
     .auth-layout {
         align-items: flex-start;
@@ -1275,7 +1289,16 @@ p {
 
 .form-actions {
     text-align: center;
-    margin-top: 1rem;
+    margin: 2rem 0;
+    display: flex;
+    justify-content: center;
+}
+
+.form-actions .btn {
+    min-width: 120px;
+    padding: 0.75rem 2rem;
+    width: auto;
+    max-width: 300px;
 }
 
 .storage-list-section {
@@ -1338,6 +1361,11 @@ p {
     width: 16px;
     height: 16px;
     fill: currentColor;
+}
+
+/* Hide password hide icon by default */
+.password-hide-icon {
+    display: none;
 }
 
 /* Ensure password toggle works in all contexts */

@@ -24,7 +24,9 @@
         <input type="email" id="admin_email" name="admin_email" placeholder="{{call .T "setup.email_placeholder"}}">
     </div>
     
-    <button type="submit" class="btn btn-success btn-full">{{call .T "setup.button"}}</button>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-success">{{call .T "setup.button"}}</button>
+    </div>
 </form>
 
 <div id="result" class="result" style="display: none;"></div>
@@ -101,6 +103,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const container = input.closest('.password-input-container');
         const showIcon = container.querySelector('.password-show-icon');
         const hideIcon = container.querySelector('.password-hide-icon');
+        
+        // Initially hide the hide icon
+        if (!window.passwordToggleInitialized) {
+            hideIcon.style.display = 'none';
+            window.passwordToggleInitialized = true;
+        }
         
         if (input.type === 'password') {
             input.type = 'text';

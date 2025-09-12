@@ -20,7 +20,9 @@
         </div>
     </div>
     
-    <button type="submit" class="btn btn-primary btn-full">{{call .T "auth.login.button"}}</button>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">{{call .T "auth.login.button"}}</button>
+    </div>
     <div id="result" class="result" style="display: none;"></div>
 </form>
 
@@ -82,6 +84,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const container = input.closest('.password-input-container');
         const showIcon = container.querySelector('.password-show-icon');
         const hideIcon = container.querySelector('.password-hide-icon');
+        
+        // Initially hide the hide icon
+        if (!window.passwordToggleInitialized) {
+            hideIcon.style.display = 'none';
+            window.passwordToggleInitialized = true;
+        }
         
         if (input.type === 'password') {
             input.type = 'text';
