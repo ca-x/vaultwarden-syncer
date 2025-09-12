@@ -453,7 +453,6 @@ p {
 
 /* Theme icon styles */
 .theme-icon {
-    fill: var(--icon-color);
     vertical-align: middle;
 }
 
@@ -604,7 +603,7 @@ p {
 }
 
 .auth-container {
-    max-width: 400px;
+    max-width: 450px;
     width: 100%;
     padding: 3rem;
 }
@@ -629,6 +628,11 @@ p {
 .auth-container input {
     max-width: 100%;
     width: 100%;
+}
+
+.auth-container .form-group {
+    max-width: 350px;
+    margin: 0 auto 1.5rem auto;
 }
 
 @media (max-width: 768px) {
@@ -676,4 +680,671 @@ p {
 .icon-large {
     font-size: 1.5em;
     margin-right: 0.5rem;
+}
+
+/* Toast Notification Styles */
+.toast {
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    margin: 1rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 500;
+    animation: slideIn 0.3s ease-out;
+    position: relative;
+    overflow: hidden;
+}
+
+.toast::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 4px;
+    background: currentColor;
+}
+
+.toast-success {
+    background: rgba(52, 199, 89, 0.15);
+    color: var(--apple-green);
+    border: 1px solid rgba(52, 199, 89, 0.3);
+}
+
+.toast-error {
+    background: rgba(255, 59, 48, 0.15);
+    color: var(--apple-red);
+    border: 1px solid rgba(255, 59, 48, 0.3);
+}
+
+.toast-warning {
+    background: rgba(255, 149, 0, 0.15);
+    color: #FF9500;
+    border: 1px solid rgba(255, 149, 0, 0.3);
+}
+
+.toast-info {
+    background: rgba(0, 122, 255, 0.15);
+    color: var(--apple-blue);
+    border: 1px solid rgba(0, 122, 255, 0.3);
+}
+
+/* Spinning animation for loading icons */
+.spinning {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Storage Selection Styles */
+.storage-selection {
+    max-height: 300px;
+    overflow-y: auto;
+    margin: 1rem 0;
+}
+
+.storage-option {
+    margin-bottom: 0.75rem;
+}
+
+.storage-checkbox {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    gap: 1rem;
+}
+
+.storage-checkbox:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--apple-blue);
+}
+
+.storage-checkbox input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.checkbox-custom {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--glass-border);
+    border-radius: 4px;
+    background: transparent;
+    position: relative;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.storage-checkbox input[type="checkbox"]:checked + .checkbox-custom {
+    background: var(--apple-blue);
+    border-color: var(--apple-blue);
+}
+
+.storage-checkbox input[type="checkbox"]:checked + .checkbox-custom::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.storage-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+}
+
+.storage-icon .type-icon {
+    font-size: 1.5em;
+}
+
+.storage-icon .webdav {
+    color: var(--apple-blue);
+}
+
+.storage-icon .s3 {
+    color: #FF9500;
+}
+
+.storage-details .storage-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.storage-details .storage-meta {
+    font-size: 0.85rem;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.loading-state, .empty-state-small, .error-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.empty-state-small {
+    font-style: italic;
+}
+
+.error-state {
+    color: var(--apple-red);
+}
+
+/* Storage Card Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.btn-action {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    min-width: auto;
+}
+
+.btn-action .btn-text {
+    display: none;
+}
+
+@media (min-width: 768px) {
+    .btn-action .btn-text {
+        display: inline;
+    }
+}
+
+/* Storage card improvements */
+.storage-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    box-shadow: var(--glass-shadow);
+    transition: all 0.3s cubic-bezier(0.4, 0.2, 0.2, 1);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+}
+
+.storage-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.storage-card-header {
+    padding: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.storage-card-body {
+    padding: 1.5rem;
+}
+
+.storage-card-footer {
+    padding: 1rem 1.5rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-top: 1px solid var(--glass-border);
+}
+
+.config-info {
+    margin-bottom: 1.5rem;
+}
+
+.config-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.config-icon {
+    color: var(--text-tertiary);
+    font-size: 1em;
+}
+
+.config-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+    min-width: 80px;
+}
+
+.config-value {
+    color: var(--text-primary);
+    word-break: break-all;
+}
+
+/* Global Notification System */
+.notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    max-width: 400px;
+    pointer-events: none;
+}
+
+.notification {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    box-shadow: var(--glass-shadow);
+    margin-bottom: 12px;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s cubic-bezier(0.4, 0.2, 0.2, 1);
+    pointer-events: auto;
+    position: relative;
+    overflow: hidden;
+}
+
+.notification::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: currentColor;
+}
+
+.notification-show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.notification-hide {
+    opacity: 0;
+    transform: translateX(100%);
+}
+
+.notification-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.notification-message {
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    margin-left: 1rem;
+    flex-shrink: 0;
+}
+
+.notification-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.notification-success {
+    color: var(--apple-green);
+    border-color: rgba(52, 199, 89, 0.3);
+}
+
+.notification-error {
+    color: var(--apple-red);
+    border-color: rgba(255, 59, 48, 0.3);
+}
+
+.notification-warning {
+    color: #FF9500;
+    border-color: rgba(255, 149, 0, 0.3);
+}
+
+.notification-info {
+    color: var(--apple-blue);
+    border-color: rgba(0, 122, 255, 0.3);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .notification-container {
+        left: 20px;
+        right: 20px;
+        max-width: none;
+    }
+    
+    .notification {
+        transform: translateY(-100%);
+    }
+    
+    .notification-show {
+        transform: translateY(0);
+    }
+    
+    .notification-hide {
+        transform: translateY(-100%);
+    }
+}
+
+/* Storage Page Specific Styles */
+.page-header {
+    margin-bottom: 2rem;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    text-align: left;
+}
+
+.header-icon {
+    color: var(--apple-blue);
+}
+
+.header-text h1 {
+    margin-bottom: 0.5rem;
+    text-align: left;
+}
+
+.header-subtitle {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    margin: 0;
+}
+
+.main-content {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+}
+
+.section-header {
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.section-header h2 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.section-icon {
+    font-size: 1.2em;
+}
+
+.section-description {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.add-storage-section {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    box-shadow: var(--glass-shadow);
+    padding: 2rem;
+}
+
+.form-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.storage-form {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.form-input, .form-select {
+    width: 100%;
+    padding: 1rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+.form-input::placeholder {
+    color: var(--text-tertiary);
+}
+
+.form-input:focus, .form-select:focus {
+    outline: none;
+    border-color: var(--apple-blue);
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+    transform: scale(1.02);
+}
+
+.form-select option {
+    background: var(--apple-light-gray);
+    color: var(--apple-dark);
+}
+
+.form-hint {
+    color: var(--text-tertiary);
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+    display: block;
+}
+
+.optional {
+    color: var(--text-tertiary);
+    font-weight: normal;
+    font-size: 0.9em;
+}
+
+.storage-config {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+}
+
+.config-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.config-header .config-icon {
+    font-size: 1.5em;
+    color: var(--apple-blue);
+}
+
+.config-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.checkbox-group {
+    margin: 0;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+.checkbox-label input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.checkbox-text {
+    font-weight: 500;
+}
+
+.form-actions {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.storage-list-section {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    box-shadow: var(--glass-shadow);
+    padding: 2rem;
+}
+
+.storage-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.notifications-container {
+    margin-bottom: 1rem;
+}
+
+/* Password Input with Toggle */
+.password-group {
+    position: relative;
+}
+
+.password-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-input {
+    padding-right: 3rem !important;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-tertiary);
+    transition: color 0.2s ease;
+    z-index: 2;
+}
+
+.password-toggle:hover {
+    color: var(--text-primary);
+}
+
+.password-toggle svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+
+/* Ensure password toggle works in all contexts */
+.form-group.password-group .password-input-container {
+    width: 100%;
+}
+
+.form-group.password-group .password-input {
+    width: 100%;
 }

@@ -1,0 +1,33 @@
+<!-- Absolute Minimal Storage Page -->
+<div style="background: red; color: white; padding: 20px; margin: 10px;">
+    <h1>MINIMAL STORAGE PAGE TEST</h1>
+    <p>If you see this, basic template rendering works.</p>
+</div>
+
+<div style="background: #f0f0f0; padding: 20px; margin: 10px;">
+    <h2>Add Storage</h2>
+    <form id="test-form">
+        <div style="margin: 10px 0;">
+            <label>Name:</label>
+            <input type="text" name="name" placeholder="Storage name">
+        </div>
+        <div style="margin: 10px 0;">
+            <label>Type:</label>
+            <select name="type">
+                <option value="">Select</option>
+                <option value="webdav">WebDAV</option>
+                <option value="s3">S3</option>
+            </select>
+        </div>
+        <button type="submit">Add</button>
+    </form>
+</div>
+
+<div style="background: #e0e0e0; padding: 20px; margin: 10px;">
+    <h2>Storage List</h2>
+    <p>Storage cards would appear here...</p>
+</div>
+
+<script>
+console.log('Minimal storage template loaded successfully');
+</script>

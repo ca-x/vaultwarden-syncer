@@ -1,0 +1,40 @@
+<!-- Debug Storage Template -->
+<div style="background: yellow; padding: 20px; margin: 10px;">
+    <h1>STORAGE DEBUG TEMPLATE</h1>
+    <p>Template is rendering...</p>
+</div>
+
+<!-- Test Go template variable access -->
+<div style="background: lightblue; padding: 20px; margin: 10px;">
+    <h2>Template Variable Test</h2>
+    <p>Testing StorageCards variable:</p>
+    <div style="border: 2px solid red; padding: 10px; background: white;">
+        {{.StorageCards}}
+    </div>
+</div>
+
+<!-- Fallback content -->
+<div style="background: lightgreen; padding: 20px; margin: 10px;">
+    <h2>Fallback Content</h2>
+    <p>This should always show up if template renders.</p>
+    
+    <form style="margin: 20px 0;">
+        <div style="margin: 10px 0;">
+            <label>Storage Name:</label>
+            <input type="text" name="name">
+        </div>
+        <div style="margin: 10px 0;">
+            <label>Type:</label>
+            <select name="type">
+                <option value="">Select type</option>
+                <option value="webdav">WebDAV</option>
+                <option value="s3">S3</option>
+            </select>
+        </div>
+        <button type="submit">Add Storage</button>
+    </form>
+</div>
+
+<script>
+console.log('Debug storage template loaded');
+</script>

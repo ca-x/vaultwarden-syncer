@@ -186,5 +186,18 @@
   "stats.retention_days": "保留天数",
   "stats.oldest_record": "最旧记录",
   "stats.newest_record": "最新记录",
-  "stats.load_error": "加载统计信息失败"
+  "stats.load_error": "加载统计信息失败",
+  "storage.create_success": "存储后端创建成功！",
+  "storage.update_success": "存储更新成功！",
+  "storage.delete_success": "存储删除成功",
+  "storage.created_reload_failed": "存储已创建，但刷新列表失败",
+  "sync.triggered_success": "同步已触发！请在仪表盘查看进度。",
+  "sync.concurrent_triggered_success": "并发同步已触发！请在仪表盘查看进度。",
+  "sync.manual_single_success": "已为 %s 触发同步！请在仪表盘查看进度。",
+  "sync.manual_multi_success": "已为 %d 个存储触发并发同步！请在仪表盘查看进度。",
+  "cleanup.triggered_success": "清理已触发！旧的同步记录将被移除。",
+  "health.all_ok": "所有存储后端健康（%d 通过）",
+  "health.completed_failed": "健康检查完成，%d 个后端失败",
+  "health.failed_backends": "失败的存储后端：",
+  "health.healthy_backends": "健康的存储后端："
 }

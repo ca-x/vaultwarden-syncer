@@ -1,0 +1,63 @@
+<!-- Storage Page Test -->
+<div class="page-header">
+    <div class="header-content">
+        <div class="header-icon">
+            <iconify-icon icon="mdi:database" class="icon-large"></iconify-icon>
+        </div>
+        <div class="header-text">
+            <h1>Storage Management</h1>
+            <p class="header-subtitle">Manage your backup storage backends</p>
+        </div>
+    </div>
+</div>
+
+<div class="main-content">
+    <section class="add-storage-section">
+        <div class="section-header">
+            <h2><iconify-icon icon="mdi:plus-circle" class="section-icon"></iconify-icon>Add New Storage</h2>
+            <p class="section-description">Configure a new storage backend for your backups</p>
+        </div>
+        
+        <div class="form-container">
+            <form id="storage-form" hx-post="/api/storage" hx-target="#result" class="storage-form">
+                <div class="form-section">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="storage_name" class="form-label">Storage Name</label>
+                            <input type="text" id="storage_name" name="name" 
+                                   class="form-input" placeholder="My Storage" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="storage_type" class="form-label">Type</label>
+                            <select id="storage_type" name="type" class="form-select" required>
+                                <option value="">Select storage type</option>
+                                <option value="webdav">WebDAV</option>
+                                <option value="s3">S3 Compatible</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <iconify-icon icon="mdi:plus"></iconify-icon>
+                        Add Storage Backend
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <section class="storage-list-section">
+        <div class="section-header">
+            <h2><iconify-icon icon="mdi:database-outline" class="section-icon"></iconify-icon>Your Storage Backends</h2>
+            <p class="section-description">Manage and monitor your configured storage backends</p>
+        </div>
+        
+        <div id="storage-list" class="storage-grid">
+            {{.StorageCards}}
+        </div>
+    </section>
+</div>
+
+<div id="result" class="result" style="display: none;"></div>

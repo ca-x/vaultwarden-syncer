@@ -1,15 +1,21 @@
 <h1><iconify-icon icon="mdi:wrench" class="icon-large icon-warning"></iconify-icon>{{call .T "setup.title"}}</h1>
 <p>{{call .T "setup.subtitle"}}</p>
 
-<form hx-post="/api/setup" hx-target="#result">
+<form hx-post="/api/setup" hx-target="#result" hx-swap="innerHTML">
     <div class="form-group">
         <label for="admin_username">{{call .T "setup.admin_username"}}</label>
         <input type="text" id="admin_username" name="admin_username" placeholder="{{call .T "setup.admin_username"}}" required>
     </div>
     
-    <div class="form-group">
+    <div class="form-group password-group">
         <label for="admin_password">{{call .T "setup.admin_password"}}</label>
-        <input type="password" id="admin_password" name="admin_password" placeholder="{{call .T "setup.admin_password"}}" required minlength="8">
+        <div class="password-input-container">
+            <input type="password" id="admin_password" name="admin_password" class="password-input" placeholder="{{call .T "setup.admin_password"}}" required minlength="8">
+            <button type="button" class="password-toggle" onclick="togglePassword('admin_password')">
+                {{icon "password-show"}}
+                {{icon "password-hide"}}
+            </button>
+        </div>
         <small>{{call .T "setup.password_hint"}}</small>
     </div>
     
@@ -21,4 +27,90 @@
     <button type="submit" class="btn btn-success btn-full">{{call .T "setup.button"}}</button>
 </form>
 
-<div id="result" class="result"></div>
+<div id="result" class="result" style="display: none;"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const result = document.getElementById('result');
+    
+    // Handle form submission
+    form.addEventListener('htmx:after-request', function(event) {
+        const xhr = event.detail.xhr;
+        const status = xhr.status;
+        
+        if (status === 200) {
+            // Success - show success message and redirect
+            result.innerHTML = '<div class="toast toast-success"><iconify-icon icon="mdi:check-circle"></iconify-icon>Setup completed successfully! Redirecting to login...</div>';
+            result.style.display = 'block';
+            
+            // Show global notification if available
+            if (window.showNotification) {
+                window.showNotification('Setup completed successfully! Redirecting...', 'success', 3000);
+            }
+            
+            // Redirect after a short delay
+            setTimeout(function() {
+                window.location.href = '/login';
+            }, 2000);
+        } else {
+            // Error
+            const errorMessage = xhr.responseText || 'Setup failed. Please check your inputs and try again.';
+            result.innerHTML = '<div class="toast toast-error"><iconify-icon icon="mdi:alert-circle"></iconify-icon>' + errorMessage + '</div>';
+            result.style.display = 'block';
+            
+            // Show global notification if available
+            if (window.showNotification) {
+                window.showNotification('Setup failed. Please try again.', 'error', 5000);
+            }
+        }
+        
+        // Auto-hide result after 8 seconds (for error messages)
+        if (status !== 200) {
+            setTimeout(function() {
+                result.style.opacity = '0';
+                setTimeout(function() {
+                    result.style.display = 'none';
+                    result.style.opacity = '1';
+                    result.innerHTML = '';
+                }, 300);
+            }, 8000);
+        }
+    });
+    
+    // Show loading state on form submission
+    form.addEventListener('htmx:before-request', function() {
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = '<iconify-icon icon="mdi:loading" class="spinning"></iconify-icon>Setting up...';
+        submitBtn.disabled = true;
+    });
+    
+    // Reset button after request (only for error cases, success will redirect)
+    form.addEventListener('htmx:after-request', function(event) {
+        const xhr = event.detail.xhr;
+        if (xhr.status !== 200) {
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = '{{call .T "setup.button"}}';
+            submitBtn.disabled = false;
+        }
+    });
+    
+    // Password visibility toggle
+    window.togglePassword = function(inputId) {
+        const input = document.getElementById(inputId);
+        const container = input.closest('.password-input-container');
+        const showIcon = container.querySelector('.password-show-icon');
+        const hideIcon = container.querySelector('.password-hide-icon');
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            showIcon.style.display = 'none';
+            hideIcon.style.display = 'block';
+        } else {
+            input.type = 'password';
+            showIcon.style.display = 'block';
+            hideIcon.style.display = 'none';
+        }
+    };
+});
+</script>

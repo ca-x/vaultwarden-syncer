@@ -4,16 +4,16 @@
         <iconify-icon icon="mdi:database-off-outline"></iconify-icon>
     </div>
     <div class="empty-state-content">
-        <h3>No storage backends configured</h3>
-        <p>Add your first storage backend to start backing up your Vaultwarden data</p>
+        <h3>{{call $.T "storage.no_backends"}}</h3>
+        <p>{{call $.T "storage.add_new_description"}}</p>
         <div class="empty-state-actions">
             <button onclick="document.getElementById('storage_type').focus()" class="btn btn-primary">
                 <iconify-icon icon="mdi:plus"></iconify-icon>
-                Add Storage Backend
+                {{call $.T "storage.add_backend"}}
             </button>
         </div>
     </div>
-</div>
+    </div>
 {{else}}
 {{range .Cards}}
 <div class="storage-card" data-status="{{if eq .Status "Enabled"}}enabled{{else}}disabled{{end}}">
@@ -33,10 +33,10 @@
                     <span class="storage-status status-{{if eq .Status "Enabled"}}enabled{{else}}disabled{{end}}">
                         {{if eq .Status "Enabled"}}
                             <iconify-icon icon="mdi:check-circle"></iconify-icon>
-                            {{.Status}}
+                            {{call $.T "storage.enabled"}}
                         {{else}}
                             <iconify-icon icon="mdi:pause-circle"></iconify-icon>
-                            {{.Status}}
+                            {{call $.T "storage.disabled"}}
                         {{end}}
                     </span>
                 </div>
@@ -44,19 +44,22 @@
         </div>
         <div class="storage-actions">
             <div class="action-buttons">
-                <button hx-post="/api/sync/{{.ID}}" hx-target="#sync-notifications" hx-swap="afterbegin" 
-                        class="btn btn-icon btn-primary" title="Sync Now"
+                <button hx-post="/api/sync/{{.ID}}" hx-target="#global-notifications" hx-swap="afterbegin" 
+                        class="btn btn-action btn-primary" title="{{call $.T "storage.sync_now"}}"
                         {{if ne .Status "Enabled"}}disabled{{end}}>
                     <iconify-icon icon="mdi:sync"></iconify-icon>
+                    <span class="btn-text">{{call $.T "common.sync"}}</span>
                 </button>
                 <button hx-get="/storage/{{.ID}}/edit" hx-target="body" 
-                        class="btn btn-icon btn-secondary" title="Edit">
+                        class="btn btn-action btn-secondary" title="{{call $.T "storage.edit"}}">
                     <iconify-icon icon="mdi:pencil"></iconify-icon>
+                    <span class="btn-text">{{call $.T "common.edit"}}</span>
                 </button>
-                <button hx-delete="/api/storage/{{.ID}}" hx-target="#sync-notifications" hx-swap="afterbegin"
-                        hx-confirm="Are you sure you want to delete this storage backend?"
-                        class="btn btn-icon btn-danger" title="Delete">
+                <button hx-delete="/api/storage/{{.ID}}" hx-target="#storage-list" hx-swap="innerHTML"
+                        hx-confirm="{{call $.T "storage.delete_confirm"}}"
+                        class="btn btn-action btn-danger" title="{{call $.T "common.delete"}}">
                     <iconify-icon icon="mdi:delete"></iconify-icon>
+                    <span class="btn-text">{{call $.T "common.delete"}}</span>
                 </button>
             </div>
         </div>
@@ -68,23 +71,23 @@
                 {{if eq .Type "webdav"}}
                     <div class="config-item">
                         <iconify-icon icon="mdi:server" class="config-icon"></iconify-icon>
-                        <span class="config-label">Server:</span>
+                        <span class="config-label">{{call $.T "storage.webdav.url"}}:</span>
                         <span class="config-value">{{.Config.url}}</span>
                     </div>
                 {{else if eq .Type "s3"}}
                     <div class="config-item">
                         <iconify-icon icon="mdi:server" class="config-icon"></iconify-icon>
-                        <span class="config-label">Endpoint:</span>
+                        <span class="config-label">{{call $.T "storage.s3.endpoint"}}:</span>
                         <span class="config-value">{{if .Config.endpoint}}{{.Config.endpoint}}{{else}}AWS S3{{end}}</span>
                     </div>
                     <div class="config-item">
                         <iconify-icon icon="mdi:earth" class="config-icon"></iconify-icon>
-                        <span class="config-label">Region:</span>
+                        <span class="config-label">{{call $.T "storage.s3.region"}}:</span>
                         <span class="config-value">{{.Config.region}}</span>
                     </div>
                     <div class="config-item">
                         <iconify-icon icon="mdi:bucket" class="config-icon"></iconify-icon>
-                        <span class="config-label">Bucket:</span>
+                        <span class="config-label">{{call $.T "storage.s3.bucket"}}:</span>
                         <span class="config-value">{{.Config.bucket}}</span>
                     </div>
                 {{end}}
@@ -98,7 +101,7 @@
                 </div>
                 <div class="status-content">
                     <div class="status-text">{{.LastSyncStatus}}</div>
-                    <div class="status-time">Last sync: {{.LastSync}}</div>
+                    <div class="status-time">{{printf (call $.T "dashboard.last_sync") .LastSync}}</div>
                     {{if .SyncError}}
                     <div class="status-error">
                         <iconify-icon icon="mdi:alert-circle"></iconify-icon>
@@ -114,7 +117,7 @@
         <div class="storage-stats">
             <div class="stat-item">
                 <iconify-icon icon="mdi:calendar-plus" class="stat-icon"></iconify-icon>
-                <span class="stat-label">Created:</span>
+                <span class="stat-label">{{call $.T "common.created"}}:</span>
                 <span class="stat-value">{{.Created}}</span>
             </div>
         </div>

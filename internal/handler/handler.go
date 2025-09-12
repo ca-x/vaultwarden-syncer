@@ -324,7 +324,9 @@ func (h *Handler) StorageList(c echo.Context) error {
 
 	html, err := h.tmplManager.RenderStorage(storages, h.client, lang, translator)
 	if err != nil {
-		return c.String(http.StatusInternalServerError, "Failed to render storage page")
+		// Log the detailed error for debugging
+		fmt.Printf("DEBUG: Failed to render storage page: %v\n", err)
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("Failed to render storage page: %v", err))
 	}
 
 	return c.HTML(http.StatusOK, html)
@@ -477,53 +479,60 @@ func (h *Handler) CreateStorage(c echo.Context) error {
 
 	fmt.Printf("Storage and config created successfully\n")
 
-	// Reload storage list to show the new storage
-	storages, err := h.client.Storage.Query().All(c.Request().Context())
-	if err != nil {
-		fmt.Printf("Storage list reload error: %v\n", err)
-		return c.HTML(http.StatusInternalServerError, `<div class="result error">Storage created but failed to reload list</div>`)
-	}
+    // Reload storage list to show the new storage
+    storages, err := h.client.Storage.Query().All(c.Request().Context())
+    if err != nil {
+        fmt.Printf("Storage list reload error: %v\n", err)
+        // Localized error message
+        lang := i18n.GetLanguageFromContext(c.Request().Context())
+        translator := i18n.GetTranslatorFromContext(c.Request().Context())
+        if translator == nil {
+            translator = i18n.New()
+        }
+        return c.HTML(http.StatusInternalServerError, fmt.Sprintf(`<div class="result error">%s</div>`, translator.T(lang, "storage.created_reload_failed")))
+    }
 
-	// Get language and translator from context
-	lang := i18n.GetLanguageFromContext(c.Request().Context())
-	translator := i18n.GetTranslatorFromContext(c.Request().Context())
-	if translator == nil {
-		translator = i18n.New()
-	}
+    // Get language and translator from context
+    lang := i18n.GetLanguageFromContext(c.Request().Context())
+    translator := i18n.GetTranslatorFromContext(c.Request().Context())
+    if translator == nil {
+        translator = i18n.New()
+    }
 
-	// Render updated storage cards
-	if h.tmplManager != nil {
-		storageCards, err := h.tmplManager.RenderStorageCards(storages, h.client, lang, translator)
-		if err == nil {
-			return c.HTML(http.StatusOK, fmt.Sprintf(`
-				<div class="result success">
-					<iconify-icon icon="mdi:check-circle" class="icon-success"></iconify-icon>
-					Storage backend created successfully!
-				</div>
-				<script>
-					// Reset form
-					document.getElementById('storage-form').reset();
-					// Hide storage type fields
-					document.querySelectorAll('.storage-config').forEach(function(el) {
-						el.style.display = 'none';
-					});
-					// Update storage list
-					document.getElementById('storage-list').innerHTML = %q;
-					// Clear any previous results after a delay
-					setTimeout(function() {
-						document.getElementById('result').innerHTML = '';
-					}, 5000);
-				</script>
-			`, storageCards))
-		} else {
-			fmt.Printf("Template rendering error: %v\n", err)
-		}
-	}
+    // Render updated storage cards
+    if h.tmplManager != nil {
+        storageCards, err := h.tmplManager.RenderStorageCards(storages, h.client, lang, translator)
+        if err == nil {
+            successMsg := translator.T(lang, "storage.create_success")
+            return c.HTML(http.StatusOK, fmt.Sprintf(`
+                <div class="result success">
+                    <iconify-icon icon="mdi:check-circle" class="icon-success"></iconify-icon>
+                    %s
+                </div>
+                <script>
+                    // Reset form
+                    document.getElementById('storage-form').reset();
+                    // Hide storage type fields
+                    document.querySelectorAll('.storage-config').forEach(function(el) {
+                        el.style.display = 'none';
+                    });
+                    // Update storage list
+                    document.getElementById('storage-list').innerHTML = %q;
+                    // Clear any previous results after a delay
+                    setTimeout(function() {
+                        document.getElementById('result').innerHTML = '';
+                    }, 5000);
+                </script>
+            `, successMsg, storageCards))
+        } else {
+            fmt.Printf("Template rendering error: %v\n", err)
+        }
+    }
 
-	return c.HTML(http.StatusOK, `<div class="result success">
-		<iconify-icon icon="mdi:check-circle" class="icon-success"></iconify-icon>
-		Storage backend created successfully!
-	</div>`)
+    return c.HTML(http.StatusOK, fmt.Sprintf(`<div class="result success">
+        <iconify-icon icon="mdi:check-circle" class="icon-success"></iconify-icon>
+        %s
+    </div>`, translator.T(lang, "storage.create_success")))
 }
 
 // UpdateStorage updates an existing storage backend
@@ -696,31 +705,59 @@ func (h *Handler) UpdateStorage(c echo.Context) error {
 		storageCards, err := h.tmplManager.RenderStorageCards(storages, h.client, lang, translator)
 		if err == nil {
 			return c.HTML(http.StatusOK, fmt.Sprintf(`
-				<div style="color: green;">Storage updated successfully!</div>
+				<div class="result success">
+					<iconify-icon icon="mdi:check-circle" class="icon-success"></iconify-icon>
+					%s
+				</div>
 				<script>
 					// Update storage list
 					document.getElementById('storage-list').innerHTML = %q;
 				</script>
-			`, storageCards))
+			`, translator.T(lang, "storage.update_success"), storageCards))
 		}
 	}
 
-	return c.HTML(http.StatusOK, `<div style="color: green;">Storage updated successfully!</div>`)
+	return c.HTML(http.StatusOK, fmt.Sprintf(`<div class="result success">
+		<iconify-icon icon="mdi:check-circle" class="icon-success"></iconify-icon>
+		%s
+	</div>`, translator.T(lang, "storage.update_success")))
 }
 
 // DeleteStorage deletes a storage backend
 func (h *Handler) DeleteStorage(c echo.Context) error {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid storage ID"})
-	}
+    id, err := strconv.Atoi(c.Param("id"))
+    if err != nil {
+        return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid storage ID"})
+    }
 
-	err = h.client.Storage.DeleteOneID(id).Exec(c.Request().Context())
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to delete storage"})
-	}
+    err = h.client.Storage.DeleteOneID(id).Exec(c.Request().Context())
+    if err != nil {
+        return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to delete storage"})
+    }
 
-	return c.JSON(http.StatusOK, map[string]string{"message": "Storage deleted successfully"})
+    // Reload storage list and render updated cards for HTMX swap
+    storages, qerr := h.client.Storage.Query().All(c.Request().Context())
+    if qerr == nil {
+        lang := i18n.GetLanguageFromContext(c.Request().Context())
+        translator := i18n.GetTranslatorFromContext(c.Request().Context())
+        if translator == nil {
+            translator = i18n.New()
+        }
+
+        if h.tmplManager != nil {
+            if storageCards, rerr := h.tmplManager.RenderStorageCards(storages, h.client, lang, translator); rerr == nil {
+                return c.HTML(http.StatusOK, storageCards)
+            }
+        }
+    }
+
+    // Fallback JSON response (localized)
+    lang := i18n.GetLanguageFromContext(c.Request().Context())
+    translator := i18n.GetTranslatorFromContext(c.Request().Context())
+    if translator == nil {
+        translator = i18n.New()
+    }
+    return c.JSON(http.StatusOK, map[string]string{"message": translator.T(lang, "storage.delete_success")})
 }
 
 // TriggerSync manually triggers a sync for a specific storage
@@ -749,10 +786,16 @@ func (h *Handler) TriggerSync(c echo.Context) error {
 		}
 	}()
 
-	return c.HTML(http.StatusOK, `<div class="result success">
-		<iconify-icon icon="mdi:sync" class="icon-success"></iconify-icon>
-		Sync triggered successfully! Check the dashboard for progress.
-	</div>`)
+    // Localize success message
+    lang := i18n.GetLanguageFromContext(c.Request().Context())
+    translator := i18n.GetTranslatorFromContext(c.Request().Context())
+    if translator == nil {
+        translator = i18n.New()
+    }
+    return c.HTML(http.StatusOK, fmt.Sprintf(`<div class="result success">
+        <iconify-icon icon="mdi:sync" class="icon-success"></iconify-icon>
+        %s
+    </div>`, translator.T(lang, "sync.triggered_success")))
 }
 
 // TriggerConcurrentSync 手动触发并发同步到所有启用的存储后端
@@ -785,10 +828,16 @@ func (h *Handler) TriggerConcurrentSync(c echo.Context) error {
 		}
 	}()
 
-	return c.HTML(http.StatusOK, `<div class="result success">
-		<iconify-icon icon="mdi:sync" class="icon-success"></iconify-icon>
-		Concurrent sync triggered successfully! Check the dashboard for progress.
-	</div>`)
+// Localize success message
+lang := i18n.GetLanguageFromContext(c.Request().Context())
+translator := i18n.GetTranslatorFromContext(c.Request().Context())
+if translator == nil {
+    translator = i18n.New()
+}
+return c.HTML(http.StatusOK, fmt.Sprintf(`<div class="result success">
+    <iconify-icon icon="mdi:sync" class="icon-success"></iconify-icon>
+    %s
+</div>`, translator.T(lang, "sync.concurrent_triggered_success")))
 }
 
 // HealthCheckAll 执行所有存储后端的健康检查
@@ -806,34 +855,42 @@ func (h *Handler) HealthCheckAll(c echo.Context) error {
 		}
 	}
 
-	// 准备响应消息
-	var message strings.Builder
-	if len(failed) > 0 {
-		message.WriteString("Failed storage backends:\n")
-		message.WriteString(strings.Join(failed, "\n"))
-		message.WriteString("\n\n")
-	}
+    // 准备响应消息（本地化段落标题）
+    lang := i18n.GetLanguageFromContext(c.Request().Context())
+    translator := i18n.GetTranslatorFromContext(c.Request().Context())
+    if translator == nil {
+        translator = i18n.New()
+    }
 
-	if len(passed) > 0 {
-		message.WriteString("Healthy storage backends:\n")
-		message.WriteString(strings.Join(passed, "\n"))
-		message.WriteString("\n")
-	}
+    var message strings.Builder
+    if len(failed) > 0 {
+        message.WriteString(translator.T(lang, "health.failed_backends"))
+        message.WriteString(":\n")
+        message.WriteString(strings.Join(failed, "\n"))
+        message.WriteString("\n\n")
+    }
+
+    if len(passed) > 0 {
+        message.WriteString(translator.T(lang, "health.healthy_backends"))
+        message.WriteString(":\n")
+        message.WriteString(strings.Join(passed, "\n"))
+        message.WriteString("\n")
+    }
 
 	// 如果有失败的存储后端，返回错误状态
-	if len(failed) > 0 {
-		return c.HTML(http.StatusOK, fmt.Sprintf(`<div class="result error">
-			<iconify-icon icon="mdi:alert-circle" class="icon-danger"></iconify-icon>
-			Health check completed with %d failed backend(s)<br><br>
-			<pre>%s</pre>
-		</div>`, len(failed), message.String()))
-	}
+    if len(failed) > 0 {
+        return c.HTML(http.StatusOK, fmt.Sprintf(`<div class="result error">
+            <iconify-icon icon="mdi:alert-circle" class="icon-danger"></iconify-icon>
+            %s<br><br>
+            <pre>%s</pre>
+        </div>`, translator.T(lang, "health.completed_failed", len(failed)), message.String()))
+    }
 
-	return c.HTML(http.StatusOK, fmt.Sprintf(`<div class="result success">
-		<iconify-icon icon="mdi:check-circle" class="icon-success"></iconify-icon>
-		All storage backends are healthy (%d passed)<br><br>
-		<pre>%s</pre>
-	</div>`, len(passed), message.String()))
+    return c.HTML(http.StatusOK, fmt.Sprintf(`<div class="result success">
+        <iconify-icon icon="mdi:check-circle" class="icon-success"></iconify-icon>
+        %s<br><br>
+        <pre>%s</pre>
+    </div>`, translator.T(lang, "health.all_ok", len(passed)), message.String()))
 }
 
 // GetSyncJobs returns the list of sync jobs
@@ -917,10 +974,15 @@ func (h *Handler) TriggerCleanup(c echo.Context) error {
 		}
 	}()
 
-	return c.HTML(http.StatusOK, `<div class="result success">
-		<iconify-icon icon="mdi:broom" class="icon-success"></iconify-icon>
-		Cleanup triggered successfully! Old sync records are being removed.
-	</div>`)
+lang := i18n.GetLanguageFromContext(c.Request().Context())
+translator := i18n.GetTranslatorFromContext(c.Request().Context())
+if translator == nil {
+    translator = i18n.New()
+}
+return c.HTML(http.StatusOK, fmt.Sprintf(`<div class="result success">
+    <iconify-icon icon="mdi:broom" class="icon-success"></iconify-icon>
+    %s
+</div>`, translator.T(lang, "cleanup.triggered_success")))
 }
 
 // GetSyncJobStats returns statistics about sync job records
@@ -1050,18 +1112,24 @@ func (h *Handler) TriggerManualSync(c echo.Context) error {
 		}
 	}()
 
-	// Return success message
-	if len(validStorages) == 1 {
-		return c.HTML(http.StatusOK, fmt.Sprintf(`<div class="result success">
-			<iconify-icon icon="mdi:sync" class="icon-success"></iconify-icon>
-			Sync triggered successfully for %s! Check the dashboard for progress.
-		</div>`, storageNames[0]))
-	} else {
-		return c.HTML(http.StatusOK, fmt.Sprintf(`<div class="result success">
-			<iconify-icon icon="mdi:sync" class="icon-success"></iconify-icon>
-			Concurrent sync triggered successfully for %d storage(s)! Check the dashboard for progress.
-		</div>`, len(validStorages)))
-	}
+    // Return success message
+    lang := i18n.GetLanguageFromContext(c.Request().Context())
+    translator := i18n.GetTranslatorFromContext(c.Request().Context())
+    if translator == nil {
+        translator = i18n.New()
+    }
+
+    if len(validStorages) == 1 {
+        return c.HTML(http.StatusOK, fmt.Sprintf(`<div class="result success">
+            <iconify-icon icon="mdi:sync" class="icon-success"></iconify-icon>
+            %s
+        </div>`, translator.T(lang, "sync.manual_single_success", storageNames[0])))
+    } else {
+        return c.HTML(http.StatusOK, fmt.Sprintf(`<div class="result success">
+            <iconify-icon icon="mdi:sync" class="icon-success"></iconify-icon>
+            %s
+        </div>`, translator.T(lang, "sync.manual_multi_success", len(validStorages))))
+    }
 }
 
 // EditStorage displays the edit storage page

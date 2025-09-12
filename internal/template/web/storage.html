@@ -1,241 +1,146 @@
-<!-- Notifications Container -->
-<div id="sync-notifications" class="notifications-container"></div>
-
-<!-- Storage Page Header -->
 <div class="page-header">
-    <div class="header-content">
-        <div class="header-icon">
-            <iconify-icon icon="mdi:database" class="icon-large"></iconify-icon>
-        </div>
-        <div class="header-text">
-            <h1>{{call .T "storage.title"}}</h1>
-            <p class="header-subtitle">{{call .T "storage.manage_subtitle"}}</p>
-        </div>
-    </div>
+    <h1>{{call .T "storage.title"}}</h1>
+    <p>{{call .T "storage.manage_subtitle"}}</p>
 </div>
 
-<!-- Main Content -->
 <div class="main-content">
-    <!-- Add New Storage Section -->
     <section class="add-storage-section">
-        <div class="section-header">
-            <h2><iconify-icon icon="mdi:plus-circle" class="section-icon"></iconify-icon>{{call .T "storage.add_new"}}</h2>
-            <p class="section-description">{{call .T "storage.add_new_description"}}</p>
-        </div>
+        <h2>{{call .T "storage.add_new"}}</h2>
+        <p>{{call .T "storage.add_new_description"}}</p>
         
-        <div class="form-container">
-            <form id="storage-form" hx-post="/api/storage" hx-target="#result" class="storage-form">
-                <!-- Basic Info -->
-                <div class="form-section">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="storage_name" class="form-label">{{call .T "storage.name"}}</label>
-                            <input type="text" id="storage_name" name="name" 
-                                   class="form-input" placeholder="{{call .T "storage.name_placeholder"}}" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="storage_type" class="form-label">{{call .T "common.type"}}</label>
-                            <select id="storage_type" name="type" class="form-select" required>
-                                <option value="">{{call .T "storage.select_type"}}</option>
-                                <option value="webdav">WebDAV</option>
-                                <option value="s3">{{call .T "storage.s3_compatible"}}</option>
-                            </select>
-                        </div>
-                    </div>
+        <form id="storage-form" hx-post="/api/storage" hx-target="#result">
+            <div>
+                <label for="storage_name">{{call .T "storage.name"}}:</label>
+                <input type="text" id="storage_name" name="name" placeholder="{{call .T "storage.name_placeholder"}}" required>
+            </div>
+            <div>
+                <label for="storage_type">{{call .T "common.type"}}:</label>
+                <select id="storage_type" name="type" required>
+                    <option value="">{{call .T "storage.select_type"}}</option>
+                    <option value="webdav">WebDAV</option>
+                    <option value="s3">S3</option>
+                </select>
+            </div>
+            
+            <!-- WebDAV specific fields -->
+            <div id="webdav-fields" class="storage-config storage-type-fields" style="display: none;">
+                <div class="form-group">
+                    <label for="webdav_url">{{call .T "storage.webdav.url"}}</label>
+                    <input type="url" id="webdav_url" name="webdav_url" placeholder="{{call .T "storage.webdav.url_placeholder"}}" class="form-input">
                 </div>
+                <div class="form-group">
+                    <label for="webdav_username">{{call .T "auth.username"}}</label>
+                    <input type="text" id="webdav_username" name="webdav_username" placeholder="{{call .T "auth.username"}}" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label for="webdav_password">{{call .T "auth.password"}}</label>
+                    <input type="password" id="webdav_password" name="webdav_password" placeholder="{{call .T "auth.password"}}" class="form-input">
+                </div>
+            </div>
 
-                <!-- WebDAV Configuration -->
-                <div id="webdav-fields" class="storage-config webdav-config" style="display: none;">
-                    <div class="config-header">
-                        <iconify-icon icon="mdi:cloud-upload" class="config-icon"></iconify-icon>
-                        <h3>{{call .T "storage.webdav_config"}}</h3>
-                    </div>
-                    <div class="form-section">
-                        <div class="form-group">
-                            <label for="webdav_url" class="form-label">{{call .T "storage.webdav.url"}}</label>
-                            <input type="url" id="webdav_url" name="webdav_url" 
-                                   class="form-input" placeholder="{{call .T "storage.webdav.url_placeholder"}}">
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="webdav_username" class="form-label">{{call .T "auth.username"}}</label>
-                                <input type="text" id="webdav_username" name="webdav_username" 
-                                       class="form-input" placeholder="{{call .T "auth.username"}}">
-                            </div>
-                            <div class="form-group">
-                                <label for="webdav_password" class="form-label">{{call .T "auth.password"}}</label>
-                                <input type="password" id="webdav_password" name="webdav_password" 
-                                       class="form-input" placeholder="••••••••">
-                            </div>
-                        </div>
-                    </div>
+            <!-- S3 specific fields -->
+            <div id="s3-fields" class="storage-config storage-type-fields" style="display: none;">
+                <div class="form-group">
+                    <label for="s3_endpoint">{{call .T "storage.s3.endpoint"}} <span class="optional">({{call .T "storage.optional"}})</span></label>
+                    <input type="text" id="s3_endpoint" name="s3_endpoint" placeholder="{{call .T "storage.s3.endpoint_placeholder"}}" class="form-input">
+                    <small class="form-hint">{{call .T "storage.s3.endpoint_hint"}}</small>
                 </div>
+                <div class="form-group">
+                    <label for="s3_access_key_id">{{call .T "storage.s3.access_key_id"}}</label>
+                    <input type="text" id="s3_access_key_id" name="s3_access_key_id" placeholder="{{call .T "storage.s3.access_key_id"}}" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label for="s3_secret_access_key">{{call .T "storage.s3.secret_access_key"}}</label>
+                    <input type="password" id="s3_secret_access_key" name="s3_secret_access_key" placeholder="{{call .T "storage.s3.secret_access_key"}}" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label for="s3_region">{{call .T "storage.s3.region"}}</label>
+                    <input type="text" id="s3_region" name="s3_region" placeholder="{{call .T "storage.s3.region_placeholder"}}" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label for="s3_bucket">{{call .T "storage.s3.bucket"}}</label>
+                    <input type="text" id="s3_bucket" name="s3_bucket" placeholder="{{call .T "storage.s3.bucket_placeholder"}}" class="form-input">
+                </div>
+            </div>
 
-                <!-- S3 Configuration -->
-                <div id="s3-fields" class="storage-config s3-config" style="display: none;">
-                    <div class="config-header">
-                        <iconify-icon icon="mdi:aws" class="config-icon"></iconify-icon>
-                        <h3>{{call .T "storage.s3_config"}}</h3>
-                    </div>
-                    <div class="form-section">
-                        <div class="form-group">
-                            <label for="s3_endpoint" class="form-label">{{call .T "storage.s3.endpoint"}} <span class="optional">({{call .T "storage.optional"}})</span></label>
-                            <input type="text" id="s3_endpoint" name="s3_endpoint" 
-                                   class="form-input" placeholder="{{call .T "storage.s3.endpoint_placeholder"}}">
-                            <small class="form-hint">{{call .T "storage.s3.endpoint_hint"}}</small>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="s3_access_key_id" class="form-label">{{call .T "storage.s3.access_key_id"}}</label>
-                                <input type="text" id="s3_access_key_id" name="s3_access_key_id" 
-                                       class="form-input" placeholder="AKIAIOSFODNN7EXAMPLE">
-                            </div>
-                            <div class="form-group">
-                                <label for="s3_secret_access_key" class="form-label">{{call .T "storage.s3.secret_access_key"}}</label>
-                                <input type="password" id="s3_secret_access_key" name="s3_secret_access_key" 
-                                       class="form-input" placeholder="••••••••••••••••••••••••••••••••••••••••">
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="s3_region" class="form-label">{{call .T "storage.s3.region"}}</label>
-                                <input type="text" id="s3_region" name="s3_region" 
-                                       class="form-input" placeholder="{{call .T "storage.s3.region_placeholder"}}">
-                            </div>
-                            <div class="form-group">
-                                <label for="s3_bucket" class="form-label">{{call .T "storage.s3.bucket"}}</label>
-                                <input type="text" id="s3_bucket" name="s3_bucket" 
-                                       class="form-input" placeholder="{{call .T "storage.s3.bucket_placeholder"}}">
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="form-group checkbox-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="storage_enabled" name="enabled">
+                    {{call .T "storage.enable_immediately"}}
+                </label>
+            </div>
 
-                <!-- Settings -->
-                <div class="form-section">
-                    <div class="form-group checkbox-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="storage_enabled" name="enabled" checked>
-                            <span class="checkbox-custom"></span>
-                            <span class="checkbox-text">{{call .T "storage.enable_immediately"}}</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Submit Button -->
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">
-                        <iconify-icon icon="mdi:plus"></iconify-icon>
-                        {{call .T "storage.add_backend"}}
-                    </button>
-                </div>
-            </form>
-        </div>
+            <button type="submit">{{call .T "storage.add_backend"}}</button>
+        </form>
     </section>
-
-    <!-- Existing Storage Section -->
+    
     <section class="storage-list-section">
-        <div class="section-header">
-            <h2><iconify-icon icon="mdi:database-outline" class="section-icon"></iconify-icon>{{call .T "storage.your_backends"}}</h2>
-            <p class="section-description">{{call .T "storage.manage_monitor_description"}}</p>
-        </div>
-        
-        <div id="storage-list" class="storage-grid">
+        <h2>{{call .T "storage.your_backends"}}</h2>
+        <div id="storage-list">
             {{.StorageCards}}
         </div>
     </section>
 </div>
 
-<div id="result" class="result"></div>
+<div id="result" class="result" style="display: none;"></div>
 
 <script>
-// Show/hide storage type specific fields with smooth transitions
-document.getElementById('storage_type').addEventListener('change', function() {
-    // Hide all storage config fields
-    document.querySelectorAll('.storage-config').forEach(function(el) {
-        el.style.display = 'none';
-    });
-    
-    // Show selected storage type fields
-    const selectedType = this.value;
-    if (selectedType === 'webdav') {
-        document.getElementById('webdav-fields').style.display = 'block';
-        document.getElementById('webdav-fields').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    } else if (selectedType === 's3') {
-        document.getElementById('s3-fields').style.display = 'block';
-        document.getElementById('s3-fields').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-});
+console.log('Storage template JavaScript loaded');
 
-// Handle form submission with validation
-document.getElementById('storage-form').addEventListener('htmx:before-request', function(event) {
-    // Get form data
-    const formData = new FormData(this);
-    const type = formData.get('type');
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM content loaded for storage page');
     
-    // Validate required fields based on storage type
-    let isValid = true;
-    let errorMessage = '';
-    
-    if (!type) {
-        isValid = false;
-        errorMessage = 'Please select a storage type';
-    } else if (type === 'webdav') {
-        if (!formData.get('webdav_url') || !formData.get('webdav_username') || !formData.get('webdav_password')) {
-            isValid = false;
-            errorMessage = 'Please fill in all required WebDAV fields (URL, username, and password)';
-        }
-    } else if (type === 's3') {
-        if (!formData.get('s3_access_key_id') || !formData.get('s3_secret_access_key') || 
-            !formData.get('s3_region') || !formData.get('s3_bucket')) {
-            isValid = false;
-            errorMessage = 'Please fill in all required S3 fields (access key, secret key, region, and bucket)';
+    const form = document.getElementById('storage-form');
+    const result = document.getElementById('result');
+    const typeSelect = document.getElementById('storage_type');
+    const webdavFields = document.getElementById('webdav-fields');
+    const s3Fields = document.getElementById('s3-fields');
+
+    function setRequired(el, required) {
+        if (!el) return;
+        if (required) {
+            el.setAttribute('required', 'required');
+        } else {
+            el.removeAttribute('required');
         }
     }
-    
-    // If validation failed, stop the request
-    if (!isValid) {
-        event.preventDefault();
-        document.getElementById('result').innerHTML = '<div class="result error">' + errorMessage + '</div>';
-        return false;
+
+    function updateTypeFields() {
+        if (webdavFields) webdavFields.style.display = 'none';
+        if (s3Fields) s3Fields.style.display = 'none';
+
+        setRequired(document.getElementById('webdav_url'), false);
+        setRequired(document.getElementById('webdav_username'), false);
+        setRequired(document.getElementById('webdav_password'), false);
+        setRequired(document.getElementById('s3_access_key_id'), false);
+        setRequired(document.getElementById('s3_secret_access_key'), false);
+        setRequired(document.getElementById('s3_region'), false);
+        setRequired(document.getElementById('s3_bucket'), false);
+
+        const val = typeSelect ? typeSelect.value : '';
+        if (val === 'webdav') {
+            if (webdavFields) webdavFields.style.display = 'block';
+            setRequired(document.getElementById('webdav_url'), true);
+            setRequired(document.getElementById('webdav_username'), true);
+            setRequired(document.getElementById('webdav_password'), true);
+        } else if (val === 's3') {
+            if (s3Fields) s3Fields.style.display = 'block';
+            setRequired(document.getElementById('s3_access_key_id'), true);
+            setRequired(document.getElementById('s3_secret_access_key'), true);
+            setRequired(document.getElementById('s3_region'), true);
+            setRequired(document.getElementById('s3_bucket'), true);
+        }
     }
-});
 
-// Clear result on form reset
-document.getElementById('storage-form').addEventListener('reset', function() {
-    document.getElementById('result').innerHTML = '';
-});
+    if (typeSelect) {
+        typeSelect.addEventListener('change', updateTypeFields);
+        updateTypeFields();
+    }
 
-// Auto-clear notifications after 5 seconds
-function setupNotificationAutoClear() {
-    const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            if (mutation.type === 'childList') {
-                mutation.addedNodes.forEach(function(node) {
-                    if (node.nodeType === Node.ELEMENT_NODE && node.classList && node.classList.contains('result')) {
-                        setTimeout(function() {
-                            if (node.parentNode) {
-                                node.style.transition = 'opacity 0.5s ease-out';
-                                node.style.opacity = '0';
-                                setTimeout(function() {
-                                    if (node.parentNode) {
-                                        node.remove();
-                                    }
-                                }, 500);
-                            }
-                        }, 5000);
-                    }
-                });
-            }
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // Client-side basic validation is already handled by required attributes
         });
-    });
-
-    const notificationsContainer = document.getElementById('sync-notifications');
-    if (notificationsContainer) {
-        observer.observe(notificationsContainer, { childList: true });
     }
-}
-
-// Initialize notification system
-setupNotificationAutoClear();
+});
 </script>

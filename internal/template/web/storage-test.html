@@ -1,0 +1,27 @@
+<!-- Minimal Storage Page Test -->
+<h1>Storage Management Test</h1>
+<p>If you can see this, basic template rendering works.</p>
+
+<div class="test-section">
+    <h2>Data Test</h2>
+    <p>StorageCards data: {{.StorageCards}}</p>
+    <p>StorageCards type: {{printf "%T" .StorageCards}}</p>
+</div>
+
+<div class="test-form">
+    <h2>Form Test</h2>
+    <form>
+        <div>
+            <label>Test Input:</label>
+            <input type="text" placeholder="test">
+        </div>
+        <button type="button">Test Button</button>
+    </form>
+</div>
+
+<script>
+console.log('Storage test template loaded');
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM content loaded');
+});
+</script>

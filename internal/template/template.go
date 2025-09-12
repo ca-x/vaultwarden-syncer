@@ -248,10 +248,10 @@ func (m *Manager) RenderStorage(storages []*ent.Storage, client *ent.Client, lan
 		},
 	}
 
-	err = m.templates.ExecuteTemplate(&content, "storage.html", data)
-	if err != nil {
-		return "", err
-	}
+    err = m.templates.ExecuteTemplate(&content, "storage.html", data)
+    if err != nil {
+        return "", fmt.Errorf("template execution failed: %w", err)
+    }
 
 	pageData := PageData{
 		Title:      translator.T(lang, "storage.title"),
@@ -424,13 +424,14 @@ func (m *Manager) RenderStorageCards(storages []*ent.Storage, client *ent.Client
 		},
 	}
 
-	var content bytes.Buffer
-	err := m.templates.ExecuteTemplate(&content, "storage-cards.html", templateData)
-	if err != nil {
-		return "", err
-	}
+    var content bytes.Buffer
+    err := m.templates.ExecuteTemplate(&content, "storage-cards.html", templateData)
+    if err != nil {
+        return "", fmt.Errorf("storage-cards template execution failed: %w", err)
+    }
 
-	return content.String(), nil
+    result := content.String()
+    return result, nil
 }
 
 // renderLayout renders the main layout with content

@@ -21,7 +21,7 @@
         
         <!-- 添加并发同步和健康检查按钮 -->
         <div class="actions" style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <button class="btn btn-primary" hx-post="/api/sync-concurrent" hx-target="#result" hx-swap="innerHTML">
+            <button class="btn btn-primary" onclick="openSyncModal()">
                 <iconify-icon icon="mdi:sync" class="icon-white"></iconify-icon>
                 {{call .T "dashboard.sync_concurrent"}}
             </button>
@@ -48,6 +48,33 @@
 
 <!-- 结果显示区域 -->
 <div id="result" class="result-container" style="margin-top: 1rem;"></div>
+
+<!-- Sync Modal -->
+<div id="sync-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><iconify-icon icon="mdi:sync"></iconify-icon>Select Storage to Sync</h3>
+            <button class="modal-close" onclick="closeSyncModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <p>Choose which enabled storage backends to sync with:</p>
+            <div id="storage-selection" class="storage-selection">
+                <!-- Storage options will be loaded here -->
+                <div class="loading-state">
+                    <iconify-icon icon="mdi:loading" class="spinning"></iconify-icon>
+                    Loading available storage...
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeSyncModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="startSync()" id="sync-start-btn" disabled>
+                <iconify-icon icon="mdi:sync"></iconify-icon>
+                Start Sync
+            </button>
+        </div>
+    </div>
+</div>
 
 <script>
 // Real-time sync status updates
@@ -98,5 +125,132 @@ setInterval(updateSyncStatus, 5000);
 document.addEventListener('DOMContentLoaded', function() {
     // Wait a bit for initial page load
     setTimeout(updateSyncStatus, 1000);
+});
+
+// Sync Modal Functions
+function openSyncModal() {
+    const modal = document.getElementById('sync-modal');
+    modal.style.display = 'flex';
+    loadStorageOptions();
+}
+
+function closeSyncModal() {
+    const modal = document.getElementById('sync-modal');
+    modal.style.display = 'none';
+    // Reset selection
+    document.getElementById('storage-selection').innerHTML = '<div class="loading-state"><iconify-icon icon="mdi:loading" class="spinning"></iconify-icon>Loading available storage...</div>';
+    document.getElementById('sync-start-btn').disabled = true;
+}
+
+function loadStorageOptions() {
+    fetch('/api/storage/enabled')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('storage-selection');
+            if (data.storages && data.storages.length > 0) {
+                container.innerHTML = data.storages.map(storage => `
+                    <div class="storage-option">
+                        <label class="storage-checkbox">
+                            <input type="checkbox" value="${storage.id}" data-name="${storage.name}" data-type="${storage.type}">
+                            <span class="checkbox-custom"></span>
+                            <div class="storage-info">
+                                <div class="storage-icon">
+                                    ${storage.type === 'webdav' ? '<iconify-icon icon="mdi:cloud-upload" class="type-icon webdav"></iconify-icon>' : '<iconify-icon icon="mdi:aws" class="type-icon s3"></iconify-icon>'}
+                                </div>
+                                <div class="storage-details">
+                                    <div class="storage-name">${storage.name}</div>
+                                    <div class="storage-meta">${storage.type.toUpperCase()}</div>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                `).join('');
+                
+                // Add event listeners to checkboxes
+                container.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.addEventListener('change', updateSyncButton);
+                });
+            } else {
+                container.innerHTML = '<div class="empty-state-small">No enabled storage backends found</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Failed to load storage options:', error);
+            document.getElementById('storage-selection').innerHTML = '<div class="error-state">Failed to load storage options</div>';
+        });
+}
+
+function updateSyncButton() {
+    const checkboxes = document.querySelectorAll('#storage-selection input[type="checkbox"]:checked');
+    const startBtn = document.getElementById('sync-start-btn');
+    startBtn.disabled = checkboxes.length === 0;
+}
+
+function startSync() {
+    const selected = Array.from(document.querySelectorAll('#storage-selection input[type="checkbox"]:checked'));
+    if (selected.length === 0) return;
+    
+    const startBtn = document.getElementById('sync-start-btn');
+    startBtn.innerHTML = '<iconify-icon icon="mdi:loading" class="spinning"></iconify-icon>Syncing...';
+    startBtn.disabled = true;
+    
+    // Start sync for each selected storage
+    const syncPromises = selected.map(checkbox => {
+        return fetch(`/api/sync/${checkbox.value}`, { method: 'POST' })
+            .then(response => ({
+                id: checkbox.value,
+                name: checkbox.dataset.name,
+                success: response.ok,
+                response: response
+            }));
+    });
+    
+    Promise.all(syncPromises).then(results => {
+        // Show results
+        const successCount = results.filter(r => r.success).length;
+        const totalCount = results.length;
+        
+        let message = `Sync completed: ${successCount}/${totalCount} successful`;
+        let messageClass = successCount === totalCount ? 'success' : (successCount > 0 ? 'warning' : 'error');
+        
+        document.getElementById('result').innerHTML = `
+            <div class="toast toast-${messageClass === 'success' ? 'success' : (messageClass === 'warning' ? 'warning' : 'error')}">
+                <iconify-icon icon="mdi:${messageClass === 'success' ? 'check-circle' : (messageClass === 'warning' ? 'alert' : 'alert-circle')}"></iconify-icon>
+                ${message}
+            </div>
+        `;
+        
+        closeSyncModal();
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            const result = document.getElementById('result');
+            result.style.opacity = '0';
+            setTimeout(() => {
+                result.innerHTML = '';
+                result.style.opacity = '1';
+            }, 300);
+        }, 5000);
+        
+        // Update sync status after a delay
+        setTimeout(updateSyncStatus, 2000);
+    }).catch(error => {
+        console.error('Sync failed:', error);
+        document.getElementById('result').innerHTML = `
+            <div class="toast toast-error">
+                <iconify-icon icon="mdi:alert-circle"></iconify-icon>
+                Sync failed: ${error.message}
+            </div>
+        `;
+        closeSyncModal();
+    });
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('sync-modal');
+    if (event.target === modal) {
+        closeSyncModal();
+    }
 });
 </script>
