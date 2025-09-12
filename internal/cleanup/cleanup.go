@@ -35,8 +35,8 @@ func (s *Service) CleanupOldSyncJobs(ctx context.Context) error {
 	log.Printf("Cleaning up sync job records older than %d days (before %s)",
 		s.config.Sync.HistoryRetentionDays, cutoffTime.Format("2006-01-02 15:04:05"))
 
-	// 分批删除记录以避免超时
-	batchSize := 1000
+	// 分批删除记录以避免超时，对于大量数据使用较小的批次
+	batchSize := 500
 	totalDeleted := 0
 
 	for {
@@ -79,12 +79,12 @@ func (s *Service) CleanupOldSyncJobs(ctx context.Context) error {
 			break
 		}
 
-		// 短暂休眠以避免过度占用数据库资源
+		// 短暂休眠以避免过度占用数据库资源，给数据库一些处理时间
 		select {
 		case <-ctx.Done():
 			log.Printf("Cleanup cancelled during batch processing: %v", ctx.Err())
 			return ctx.Err()
-		case <-time.After(100 * time.Millisecond):
+		case <-time.After(200 * time.Millisecond):
 		}
 	}
 
@@ -170,8 +170,8 @@ func (s *Service) CleanupOldSyncJobsByStorage(ctx context.Context, storageID int
 
 	cutoffTime := time.Now().AddDate(0, 0, -s.config.Sync.HistoryRetentionDays)
 
-	// 分批删除记录以避免超时
-	batchSize := 1000
+	// 分批删除记录以避免超时，对于大量数据使用较小的批次
+	batchSize := 500
 	totalDeleted := 0
 
 	for {
@@ -219,12 +219,12 @@ func (s *Service) CleanupOldSyncJobsByStorage(ctx context.Context, storageID int
 			break
 		}
 
-		// 短暂休眠以避免过度占用数据库资源
+		// 短暂休眠以避免过度占用数据库资源，给数据库一些处理时间
 		select {
 		case <-ctx.Done():
 			log.Printf("Cleanup for storage %d cancelled during batch processing: %v", storageID, ctx.Err())
 			return ctx.Err()
-		case <-time.After(100 * time.Millisecond):
+		case <-time.After(200 * time.Millisecond):
 		}
 	}
 

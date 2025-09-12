@@ -191,26 +191,26 @@ nav ul li a:hover {
 
 /* Form Styles */
 .form-group {
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.875rem;
 }
 
 label {
     display: block;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.3rem;
     font-weight: 600;
     color: var(--text-primary);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
 }
 
 input, select, textarea {
     width: 100%;
-    padding: 1rem;
+    padding: 0.5rem;
     border: 1px solid var(--glass-border);
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     color: var(--text-primary);
-    font-size: 1rem;
+    font-size: 0.9rem;
     transition: all 0.3s ease;
     box-sizing: border-box;
 }
@@ -224,7 +224,14 @@ input:focus, select:focus, textarea:focus {
     border-color: var(--apple-blue);
     background: rgba(255, 255, 255, 0.2);
     box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
-    transform: scale(1.02);
+    /* 移除可能导致密码切换按钮位置变化的变换 */
+    /* transform: scale(1.02); */
+}
+
+/* 为密码输入框添加特殊样式 */
+input[type="password"] {
+    /* 确保密码输入框在focus时不会缩放，避免影响密码切换按钮 */
+    transition: all 0.3s ease, transform 0s;
 }
 
 select option {
@@ -247,11 +254,11 @@ small {
 
 /* Button Styles */
 button, .btn {
-    padding: 1rem;
+    padding: 0.625rem;
     border: none;
     border-radius: 12px;
     color: var(--text-primary);
-    font-size: 1.1rem;
+    font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0.2, 0.2, 1);
@@ -332,6 +339,9 @@ button:active, .btn:active {
     display: flex;
     align-items: center;
     justify-content: center;
+    /* 添加固定尺寸以确保一致性 */
+    width: 40px;
+    height: 40px;
 }
 
 .theme-toggle-btn:hover {
@@ -359,7 +369,7 @@ h1, h2, h3, h4, h5, h6 {
 
 h1 {
     text-align: center;
-    font-size: 2.5rem;
+    font-size: 2.25rem;
     font-weight: 700;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -454,6 +464,8 @@ p {
 /* Theme icon styles */
 .theme-icon {
     vertical-align: middle;
+    width: 24px;
+    height: 24px;
 }
 
 /* Modal Styles */
@@ -603,24 +615,24 @@ p {
 }
 
 .auth-container {
-    max-width: 450px;
+    max-width: 300px;
     width: 100%;
-    padding: 3rem;
+    padding: 0.625rem;
 }
 
 /* Login form specific styles */
 .login-header {
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: 0.75rem;
 }
 
 .login-header h1 {
-    font-size: 2rem;
+    font-size: 1.75rem;
     margin-bottom: 0.5rem;
 }
 
 .login-header p {
-    font-size: 1rem;
+    font-size: 0.9rem;
     opacity: 0.9;
 }
 
@@ -631,38 +643,42 @@ p {
 }
 
 .auth-container .form-group {
-    max-width: 350px;
-    margin: 0 auto 1.5rem auto;
+    max-width: 260px;
+    margin: 0 auto 0.75rem auto;
 }
 
 .form-actions {
     text-align: center;
-    margin: 2rem 0;
+    margin: 0.75rem 0;
     display: flex;
     justify-content: center;
 }
 
 .form-actions .btn {
-    min-width: 120px;
-    padding: 0.75rem 2rem;
+    min-width: 90px;
+    padding: 0.5rem 1rem;
     width: auto;
-    max-width: 200px;
+    max-width: 140px;
 }
 
 @media (max-width: 768px) {
     .auth-layout {
         align-items: flex-start;
-        padding-top: 2rem;
+        padding-top: 0.875rem;
     }
     
     .auth-container {
-        padding: 2rem;
-        max-width: 350px;
+        padding: 0.5rem;
+        max-width: 260px;
         margin: 0 auto;
     }
     
     .login-header h1 {
-        font-size: 1.75rem;
+        font-size: 1.25rem;
+    }
+    
+    h1 {
+        font-size: 1.5rem;
     }
 }
 
@@ -1287,20 +1303,6 @@ p {
     font-weight: 500;
 }
 
-.form-actions {
-    text-align: center;
-    margin: 2rem 0;
-    display: flex;
-    justify-content: center;
-}
-
-.form-actions .btn {
-    min-width: 120px;
-    padding: 0.75rem 2rem;
-    width: auto;
-    max-width: 300px;
-}
-
 .storage-list-section {
     background: var(--glass-bg);
     backdrop-filter: blur(20px);
@@ -1330,6 +1332,8 @@ p {
     position: relative;
     display: flex;
     align-items: center;
+    /* 防止子元素变换影响布局 */
+    transform-style: preserve-3d;
 }
 
 .password-input {
@@ -1351,15 +1355,24 @@ p {
     color: var(--text-tertiary);
     transition: color 0.2s ease;
     z-index: 2;
+    /* 确保hover时位置稳定 */
+    will-change: transform;
+    /* 添加固定定位以防止父元素变换影响 */
+    transform-origin: center;
+    /* 添加固定尺寸以确保一致性 */
+    width: 28px;
+    height: 28px;
 }
 
 .password-toggle:hover {
     color: var(--text-primary);
+    /* 保持与正常状态相同的变换 */
+    transform: translateY(-50%);
 }
 
 .password-toggle svg {
-    width: 16px;
-    height: 16px;
+    width: 24px;
+    height: 24px;
     fill: currentColor;
 }
 

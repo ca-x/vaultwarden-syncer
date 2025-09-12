@@ -151,8 +151,9 @@ func (s *Service) RunSyncNow(ctx context.Context) error {
 func (s *Service) runCleanup(ctx context.Context) error {
 	log.Println("Starting scheduled cleanup of old sync job records")
 
-	// 为清理操作设置超时，避免长时间阻塞
-	cleanupCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	// 为清理操作设置更长的超时时间，因为清理大量历史数据可能需要较长时间
+	// 使用10分钟超时，应该足够处理大量数据
+	cleanupCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
 	if err := s.cleanupService.CleanupOldSyncJobs(cleanupCtx); err != nil {
