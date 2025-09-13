@@ -25,7 +25,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-w -s' -o 
 FROM alpine:latest
 
 # Install runtime dependencies
-RUN apk --no-cache add ca-certificates tzdata
+RUN apk --no-cache add ca-certificates tzdata curl
 
 # Create directories
 RUN mkdir -p /app/data /app/logs /app/data/vaultwarden
@@ -53,7 +53,7 @@ EXPOSE 8181
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8181/health || exit 1
+    CMD curl -f http://localhost:8181/health || exit 1
 
 # Run the application
 CMD ["./vaultwarden-syncer"]

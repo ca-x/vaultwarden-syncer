@@ -1,33 +1,6 @@
 version: '3.8'
 
 services:
-  vaultwarden-syncer:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: vaultwarden-syncer
-    restart: unless-stopped
-    ports:
-      - "8181:8181"
-    volumes:
-      # Configuration file (copy from config.yaml.example and customize)
-      - ./config.yaml:/app/config.yaml:ro
-      # Application data directory
-      - ./data:/app/data
-      # Logs directory
-      - ./logs:/app/logs
-      # Vaultwarden data directory (mount from your vaultwarden instance)
-      - /path/to/vaultwarden/data:/app/data/vaultwarden:ro
-    environment:
-      - TZ=UTC
-    networks:
-      - vaultwarden-syncer
-    depends_on:
-      - vaultwarden
-    labels:
-      - "com.docker.compose.project=vaultwarden-syncer"
-
-  # Optional: Include vaultwarden service if not running separately
   vaultwarden:
     image: vaultwarden/server:latest
     container_name: vaultwarden
@@ -39,11 +12,58 @@ services:
     environment:
       - WEBSOCKET_ENABLED=true
       - SIGNUPS_ALLOWED=false
-      - ADMIN_TOKEN=your-admin-token-here
+      - ADMIN_TOKEN=${ADMIN_TOKEN:-changeme}
+      - DOMAIN=${DOMAIN:-http://localhost:8080}
+      - LOG_LEVEL=${LOG_LEVEL:-warn}
+      - EXTENDED_LOGGING=true
+      - LOG_FILE=/data/vaultwarden.log
+      - TZ=${TZ:-UTC}
     networks:
-      - vaultwarden-syncer
+      - vaultwarden-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/alive"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
-  # Optional: Add a reverse proxy like Traefik or nginx
+  vaultwarden-syncer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vaultwarden-syncer
+    restart: unless-stopped
+    ports:
+      - "8181:8181"
+    volumes:
+      # Configuration file (copy from config.yaml.example and customize)
+      - ./config.yaml:/app/config.yaml:ro
+      # Application data directory  
+      - syncer-data:/app/data
+      # Logs directory
+      - syncer-logs:/app/logs
+      # Mount vaultwarden data volume (shared with vaultwarden service)
+      - vw-data:/app/data/vaultwarden:ro
+      # Backup storage directory
+      - ./backups:/app/backups
+    environment:
+      - TZ=${TZ:-UTC}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    networks:
+      - vaultwarden-network
+    depends_on:
+      vaultwarden:
+        condition: service_healthy
+    labels:
+      - "com.docker.compose.project=vaultwarden-syncer"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8181/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Optional: Add nginx reverse proxy for SSL termination
   nginx:
     image: nginx:alpine
     container_name: vaultwarden-proxy
@@ -52,18 +72,50 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/nginx/ssl:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
     networks:
-      - vaultwarden-syncer
+      - vaultwarden-network
     depends_on:
       - vaultwarden
       - vaultwarden-syncer
+    profiles:
+      - proxy
+
+  # Optional: MinIO for S3-compatible local storage testing
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin123}
+    command: server /data --console-address ":9001"
+    networks:
+      - vaultwarden-network
+    profiles:
+      - minio
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 networks:
-  vaultwarden-syncer:
+  vaultwarden-network:
     driver: bridge
 
 volumes:
   vw-data:
+    driver: local
+  syncer-data:
+    driver: local  
+  syncer-logs:
+    driver: local
+  minio-data:
     driver: local

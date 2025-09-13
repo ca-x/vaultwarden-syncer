@@ -13,6 +13,15 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
+// S3ClientInterface 定义S3客户端接口，用于测试时的mock
+type S3ClientInterface interface {
+	PutObject(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error)
+	GetObject(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error)
+	DeleteObject(ctx context.Context, params *s3.DeleteObjectInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectOutput, error)
+	ListObjectsV2(ctx context.Context, params *s3.ListObjectsV2Input, optFns ...func(*s3.Options)) (*s3.ListObjectsV2Output, error)
+	HeadObject(ctx context.Context, params *s3.HeadObjectInput, optFns ...func(*s3.Options)) (*s3.HeadObjectOutput, error)
+}
+
 type S3Config struct {
 	Name            string `json:"name"`
 	Endpoint        string `json:"endpoint"`
@@ -43,7 +52,7 @@ func (c S3Config) Validate() error {
 
 type S3Provider struct {
 	config S3Config
-	client *s3.Client
+	client S3ClientInterface
 }
 
 func NewS3Provider(config S3Config) (*S3Provider, error) {
@@ -57,6 +66,18 @@ func NewS3Provider(config S3Config) (*S3Provider, error) {
 	}
 
 	client := s3.NewFromConfig(cfg)
+
+	return &S3Provider{
+		config: config,
+		client: client,
+	}, nil
+}
+
+// NewS3ProviderWithClient 创建带有自定义客户端的S3Provider，主要用于测试
+func NewS3ProviderWithClient(config S3Config, client S3ClientInterface) (*S3Provider, error) {
+	if err := config.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid S3 config: %w", err)
+	}
 
 	return &S3Provider{
 		config: config,
